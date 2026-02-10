@@ -7,6 +7,9 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 320 }).notNull().unique(),
   balanceUsd: decimal("balance_usd", { precision: 12, scale: 4 }).notNull().default("0"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
+  gonkaAddress: varchar("gonka_address", { length: 128 }),
+  gonkaPubkey: varchar("gonka_pubkey", { length: 512 }),
+  encryptedMnemonic: text("encrypted_mnemonic"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -43,6 +46,8 @@ export const transactions = pgTable("transactions", {
     .references(() => users.id, { onDelete: "cascade" }),
   type: varchar("type", { length: 32 }).notNull(),
   amountUsd: decimal("amount_usd", { precision: 12, scale: 4 }).notNull(),
+  // Balance after applying this transaction (computed at the time it was recorded).
+  balanceAfterUsd: decimal("balance_after_usd", { precision: 12, scale: 4 }),
   stripePaymentId: varchar("stripe_payment_id", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

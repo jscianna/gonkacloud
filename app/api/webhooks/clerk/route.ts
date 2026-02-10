@@ -6,6 +6,7 @@ import { Webhook } from "svix";
 
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { generateWallet } from "@/lib/wallet/gonka";
 
 function getPrimaryEmail(event: WebhookEvent): string | null {
   if (event.type !== "user.created") {
@@ -72,6 +73,35 @@ export async function POST(req: Request) {
         },
         setWhere: eq(users.clerkId, event.data.id),
       });
+
+    const [dbUser] = await db
+      .select({ id: users.id, gonkaAddress: users.gonkaAddress })
+      .from(users)
+      .where(eq(users.clerkId, event.data.id))
+      .limit(1);
+
+    if (!dbUser) {
+      return NextResponse.json({ error: "User provisioning failed" }, { status: 500 });
+    }
+
+    // Provision custodial Gonka wallet if not already present.
+    if (!dbUser.gonkaAddress) {
+      try {
+        const wallet = await generateWallet();
+
+        await db
+          .update(users)
+          .set({
+            gonkaAddress: wallet.address,
+            gonkaPubkey: wallet.pubkey,
+            encryptedMnemonic: wallet.encryptedMnemonic,
+          })
+          .where(eq(users.id, dbUser.id));
+      } catch {
+        // Return 500 so Clerk retries; we never want to create a wallet without KMS protection.
+        return NextResponse.json({ error: "Wallet provisioning failed" }, { status: 500 });
+      }
+    }
   }
 
   return NextResponse.json({ ok: true }, { status: 200 });

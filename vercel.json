@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "app/api/v1/chat/completions/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "regions": ["iad1"]
+}
