@@ -11,7 +11,6 @@ const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 const ALLOWED_TRANSFER_AGENTS = [
   "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
   "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
-  "gonka1kx9mca3xm8u8ypzfuhmxey66u0ufxhs7nm6wc5",
   "gonka1ddswmmmn38esxegjf6qw36mt4aqyw6etvysy5x",
   "gonka10fynmy2npvdvew0vj2288gz8ljfvmjs35lat8n",
   "gonka1v8gk5z7gcv72447yfcd2y8g78qk05yc4f3nk4w",
