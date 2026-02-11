@@ -7,6 +7,7 @@ import { ApiAuthError, validateKey } from "@/lib/api/validate-key";
 import { db } from "@/lib/db";
 import { apiKeys, transactions, usageLogs, users } from "@/lib/db/schema";
 import { gonkaInference } from "@/lib/gonka/inference";
+import { getBalance } from "@/lib/wallet/gonka";
 
 class ApiError extends Error {
   status: number;
@@ -95,17 +96,8 @@ export async function POST(req: Request) {
     }
 
     const reserveUsd = estimateCostUsd(model, messages, typeof maxTokens === "number" ? maxTokens : undefined);
-
-    const currentBalance = Number.parseFloat(user.balanceUsd ?? "0");
-    if (!Number.isFinite(currentBalance) || currentBalance < reserveUsd) {
-      throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
-    }
-
-    // Reserve funds up-front to prevent races/overdraft.
-    const reserved = await reserveFunds(user.id, reserveUsd);
-    if (!reserved) {
-      throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
-    }
+    const useUsdBilling = false; // Future: enable again for USD -> GONKA conversion flows.
+    let reservedUsd = false;
 
     // Update last used.
     await db
@@ -118,6 +110,29 @@ export async function POST(req: Request) {
 
     if (!gonkaAddress || !encryptedMnemonic) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
+    }
+
+    // Gonka on-chain balance is required for inference today.
+    const gonkaBalance = await getBalance(gonkaAddress);
+    if (Number(gonkaBalance.ngonka) <= 0) {
+      return NextResponse.json(
+        { error: "Insufficient Gonka balance. Please deposit GONKA tokens or add USD credits." },
+        { status: 402 }
+      );
+    }
+
+    // USD balance check is retained for future conversion flow, but does not block inference for now.
+    if (useUsdBilling) {
+      const currentBalance = Number.parseFloat(user.balanceUsd ?? "0");
+      if (!Number.isFinite(currentBalance) || currentBalance < reserveUsd) {
+        throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
+      }
+
+      const reserved = await reserveFunds(user.id, reserveUsd);
+      if (!reserved) {
+        throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
+      }
+      reservedUsd = true;
     }
 
     const upstreamRes = await gonkaInference({
@@ -133,7 +148,9 @@ export async function POST(req: Request) {
     if (!upstreamRes.ok || !upstreamRes.body) {
       const text = await upstreamRes.text().catch(() => "");
       // Refund reserved funds since we didn't complete inference.
-      await adjustBalance(user.id, reserveUsd);
+      if (reservedUsd) {
+        await adjustBalance(user.id, reserveUsd);
+      }
 
       throw new ApiError(
         502,
@@ -151,10 +168,11 @@ export async function POST(req: Request) {
       const completionTokens = Number(usage?.completion_tokens ?? 0);
 
       const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
-      const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
-
-      if (refundUsd > 0) {
-        await adjustBalance(user.id, refundUsd);
+      if (reservedUsd) {
+        const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
+        if (refundUsd > 0) {
+          await adjustBalance(user.id, refundUsd);
+        }
       }
 
       // Record usage log + transaction.
@@ -169,12 +187,14 @@ export async function POST(req: Request) {
         costUsd: toUsdString(actualCostUsd),
       });
 
-      await db.insert(transactions).values({
-        userId: user.id,
-        type: "usage",
-        amountUsd: toUsdString(actualCostUsd),
-        balanceAfterUsd: balanceRow?.balanceUsd,
-      });
+      if (reservedUsd) {
+        await db.insert(transactions).values({
+          userId: user.id,
+          type: "usage",
+          amountUsd: toUsdString(actualCostUsd),
+          balanceAfterUsd: balanceRow?.balanceUsd,
+        });
+      }
 
       const res = NextResponse.json(json, { status: 200 });
       res.headers.set("X-Request-Cost", actualCostUsd.toFixed(6));
@@ -236,10 +256,11 @@ export async function POST(req: Request) {
           const completionTokens = Number(finalUsage?.completion_tokens ?? 0);
 
           const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
-          const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
-
-          if (refundUsd > 0) {
-            await adjustBalance(user.id, refundUsd);
+          if (reservedUsd) {
+            const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
+            if (refundUsd > 0) {
+              await adjustBalance(user.id, refundUsd);
+            }
           }
 
           const [balanceRow] = await db.select({ balanceUsd: users.balanceUsd }).from(users).where(eq(users.id, user.id)).limit(1);
@@ -253,12 +274,14 @@ export async function POST(req: Request) {
             costUsd: toUsdString(actualCostUsd),
           });
 
-          await db.insert(transactions).values({
-            userId: user.id,
-            type: "usage",
-            amountUsd: toUsdString(actualCostUsd),
-            balanceAfterUsd: balanceRow?.balanceUsd,
-          });
+          if (reservedUsd) {
+            await db.insert(transactions).values({
+              userId: user.id,
+              type: "usage",
+              amountUsd: toUsdString(actualCostUsd),
+              balanceAfterUsd: balanceRow?.balanceUsd,
+            });
+          }
         }
       },
     });
