@@ -25,7 +25,7 @@ function requireGonkaAddress(addr: string | null | undefined) {
 }
 
 type SelectedProvider = {
-  providerAddress: string;
+  providerTransferAddress: string;
   inferenceUrl: string;
 };
 
@@ -66,15 +66,13 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
 
     if (eligible.length > 0) {
       const provider = eligible[Math.floor(Math.random() * eligible.length)];
-      const providerAddress = String(
-        provider.index || provider.address || provider.provider_address || provider.providerAddress
-      );
+      const providerTransferAddress = String(provider.index || "");
       const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
 
-      if (providerAddress && inferenceUrl) {
-        console.log("Selected provider:", providerAddress);
+      if (providerTransferAddress && inferenceUrl) {
+        console.log("Selected provider:", providerTransferAddress);
         console.log("Selected provider inference_url:", inferenceUrl);
-        return { providerAddress, inferenceUrl };
+        return { providerTransferAddress, inferenceUrl };
       }
     }
   }
@@ -143,7 +141,7 @@ export async function gonkaInference(params: {
 
     console.log("Step: fetch provider using bootstrap fallback");
     const provider = await getProviderWithFallback();
-    const providerAddress = provider.providerAddress;
+    const providerTransferAddress = provider.providerTransferAddress;
 
     const payload = {
       model: params.model,
@@ -157,12 +155,12 @@ export async function gonkaInference(params: {
 
     const timestampNs = BigInt(Date.now()) * 1_000_000n;
 
-    const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerAddress);
+    const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
 
     requireGonkaAddress(params.gonkaAddress);
     const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
     console.log("Target URL:", targetUrl);
-    console.log("Provider address:", providerAddress);
+    console.log("Provider transferAddress:", providerTransferAddress);
 
     console.log("Gonka inference URL:", provider.inferenceUrl);
     console.log("Gonka inference headers:", {

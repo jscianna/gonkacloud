@@ -6,16 +6,13 @@ export function signGonkaRequest(
   payload: string,
   privateKeyHex: string,
   timestampNs: bigint,
-  providerAddress: string
+  providerTransferAddress: string
 ): string {
-  const payloadBytes = new TextEncoder().encode(payload);
-  const timestampBytes = new TextEncoder().encode(timestampNs.toString());
-  const providerBytes = new TextEncoder().encode(providerAddress);
+  // SDK signing spec: sign(payload + timestamp + providerTransferAddress)
+  const message = `${payload}${timestampNs.toString()}${providerTransferAddress}`;
+  const messageBytes = new TextEncoder().encode(message);
 
-  // Concatenate: payload || timestamp || provider
-  const message = new Uint8Array([...payloadBytes, ...timestampBytes, ...providerBytes]);
-
-  const messageHash = sha256(message);
+  const messageHash = sha256(messageBytes);
   const privateKey = fromHex(privateKeyHex);
 
   const { signature } = secp256k1.ecdsaSign(messageHash, privateKey);
