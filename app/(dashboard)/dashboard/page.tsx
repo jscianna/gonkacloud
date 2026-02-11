@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     tokensUsed = Number(stats?.tokensUsed ?? 0);
   }
 
-  const balanceColor = safeBalance < 5 ? "text-amber-600" : "text-emerald-600";
+  const balanceColor = safeBalance <= 0 ? "text-amber-600" : "text-emerald-600";
 
   return (
     <section className="space-y-6">
@@ -56,6 +56,7 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardDescription>Current Balance</CardDescription>
             <CardTitle className={`text-3xl ${balanceColor}`}>{formatCurrency(safeBalance)}</CardTitle>
+            {safeBalance <= 0 ? <CardDescription>Add credits to start.</CardDescription> : null}
           </CardHeader>
         </Card>
 

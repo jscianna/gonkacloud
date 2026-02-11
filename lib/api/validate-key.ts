@@ -52,6 +52,8 @@ export async function validateKey(req: Request) {
         clerkId: users.clerkId,
         email: users.email,
         balanceUsd: users.balanceUsd,
+        gonkaAddress: users.gonkaAddress,
+        encryptedMnemonic: users.encryptedMnemonic,
       },
     })
     .from(apiKeys)

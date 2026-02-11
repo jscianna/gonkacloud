@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       .values({
         clerkId: event.data.id,
         email,
-        balanceUsd: "5.00",
+        balanceUsd: "0.00",
       })
       .onConflictDoUpdate({
         target: users.clerkId,

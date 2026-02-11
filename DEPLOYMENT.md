@@ -115,7 +115,7 @@ Non-stream chat:
 curl -s "$APP_URL/api/v1/chat/completions" \
   -H "Authorization: Bearer $GONKACLOUD_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"llama-3.3-70b","messages":[{"role":"user","content":"Hello"}]}' | jq
+  -d '{"model":"Qwen/QwQ-32B","messages":[{"role":"user","content":"Hello"}]}' | jq
 ```
 
 Streaming chat:
@@ -124,5 +124,5 @@ Streaming chat:
 curl -N "$APP_URL/api/v1/chat/completions" \
   -H "Authorization: Bearer $GONKACLOUD_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"model":"llama-3.3-70b","stream":true,"messages":[{"role":"user","content":"Stream a haiku"}]}'
+  -d '{"model":"Qwen/QwQ-32B","stream":true,"messages":[{"role":"user","content":"Stream a haiku"}]}'
 ```

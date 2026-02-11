@@ -25,11 +25,10 @@ type Conversation = {
   updatedAt: number;
 };
 
-const MODELS = ["llama-3.3-70b", "mixtral-8x22b"] as const;
+const MODELS = ["Qwen/QwQ-32B"] as const;
 
 const PRICING: Record<string, { input: number; output: number }> = {
-  "llama-3.3-70b": { input: 0.6, output: 1.2 },
-  "mixtral-8x22b": { input: 0.4, output: 0.8 },
+  "Qwen/QwQ-32B": { input: 0.5, output: 1.0 },
 };
 
 function calcCost(model: string, prompt: number, completion: number) {

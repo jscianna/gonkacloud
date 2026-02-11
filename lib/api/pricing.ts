@@ -1,7 +1,5 @@
 export const PRICING: Record<string, { input: number; output: number }> = {
-  "llama-3.3-70b": { input: 0.6, output: 1.2 },
-  "mixtral-8x22b": { input: 0.4, output: 0.8 },
-  // Add more models here.
+  "Qwen/QwQ-32B": { input: 0.5, output: 1.0 },
 };
 
 export function calculateCostUsd(model: string, promptTokens: number, completionTokens: number) {
@@ -13,7 +11,6 @@ export function calculateCostUsd(model: string, promptTokens: number, completion
   const input = (Math.max(0, promptTokens) * pricing.input) / 1_000_000;
   const output = (Math.max(0, completionTokens) * pricing.output) / 1_000_000;
 
-  // Keep extra precision for accounting; callers can format as needed.
   return input + output;
 }
 
@@ -25,7 +22,6 @@ type ChatMessage = {
 function messageText(content: unknown): string {
   if (typeof content === "string") return content;
 
-  // Handle OpenAI-style array content: [{type:'text', text:'...'}]
   if (Array.isArray(content)) {
     return content
       .map((part) => {
@@ -42,14 +38,12 @@ function messageText(content: unknown): string {
 }
 
 function roughTokenEstimateFromText(text: string) {
-  // Very rough: ~4 chars/token for English, plus a little overhead.
   const chars = text.length;
   return Math.ceil(chars / 4);
 }
 
 export function estimateTokens(messages: ChatMessage[]) {
   const content = messages.map((m) => messageText(m.content)).join("\n");
-  // Small overhead per message.
   const overhead = messages.length * 4;
   return roughTokenEstimateFromText(content) + overhead;
 }

@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/api/rate-limit";
 import { ApiAuthError, validateKey } from "@/lib/api/validate-key";
 import { db } from "@/lib/db";
 import { apiKeys, transactions, usageLogs, users } from "@/lib/db/schema";
+import { gonkaInference } from "@/lib/gonka/inference";
 
 class ApiError extends Error {
   status: number;
@@ -112,32 +113,21 @@ export async function POST(req: Request) {
       .set({ lastUsedAt: new Date() })
       .where(and(eq(apiKeys.id, apiKey.id), isNull(apiKeys.revokedAt)));
 
-    const baseUrl = process.env.GONKA_API_URL ?? process.env.GONKA_API_BASE_URL;
-    const gonkaKey = process.env.GONKA_API_KEY;
+    const gonkaAddress = user.gonkaAddress;
+    const encryptedMnemonic = user.encryptedMnemonic;
 
-    if (!baseUrl || !gonkaKey) {
-      throw new ApiError(500, "Gonka API not configured", "server_error", "missing_upstream_config");
+    if (!gonkaAddress || !encryptedMnemonic) {
+      throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
     }
 
-    const upstreamUrl = new URL("/v1/chat/completions", baseUrl).toString();
-
-    const upstreamBody = {
+    const upstreamRes = await gonkaInference({
+      encryptedMnemonic,
+      gonkaAddress,
       model,
       messages,
       stream,
       temperature,
       max_tokens: maxTokens,
-      // Ask upstream to include usage at end of stream if supported.
-      ...(stream ? { stream_options: { include_usage: true } } : null),
-    };
-
-    const upstreamRes = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${gonkaKey}`,
-      },
-      body: JSON.stringify(upstreamBody),
     });
 
     if (!upstreamRes.ok || !upstreamRes.body) {
