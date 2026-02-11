@@ -5,10 +5,35 @@ import { decrypt, encrypt } from "@/lib/wallet/kms";
 
 export const CHAIN_ID = process.env.GONKA_CHAIN_ID || "gonka-mainnet";
 export const ADDRESS_PREFIX = "gonka";
-export const RPC_URL = process.env.GONKA_RPC_URL || "http://node2.gonka.ai:8000/chain-rpc";
 export const DENOM = "ngonka";
 
 const NGONKA_PER_GONKA = 1_000_000_000n;
+const DEFAULT_RPC_URL = "http://node2.gonka.ai:8000/chain-rpc";
+
+function resolveRpcUrl() {
+  const raw = (process.env.GONKA_RPC_URL || "").trim();
+  if (!raw) return DEFAULT_RPC_URL;
+
+  try {
+    const parsed = new URL(raw);
+
+    // Gonka RPC must run on :8000, even if env var omitted the port.
+    if (parsed.hostname.endsWith("gonka.ai") && !parsed.port) {
+      parsed.port = "8000";
+    }
+
+    // Chain RPC endpoint path.
+    if (!parsed.pathname || parsed.pathname === "/") {
+      parsed.pathname = "/chain-rpc";
+    }
+
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return DEFAULT_RPC_URL;
+  }
+}
+
+export const RPC_URL = resolveRpcUrl();
 
 function ngonkaToGonkaString(ngonka: string) {
   const n = BigInt(ngonka || "0");
