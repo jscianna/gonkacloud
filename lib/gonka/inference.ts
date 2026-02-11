@@ -8,6 +8,15 @@ import { signGonkaRequest } from "@/lib/gonka/sign";
 const PARTICIPANT_BOOTSTRAP_NODES = ["http://node2.gonka.ai:8000", "http://node1.gonka.ai:8000"];
 const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
+const ALLOWED_TRANSFER_AGENTS = [
+  "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
+  "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
+  "gonka1kx9mca3xm8u8ypzfuhmxey66u0ufxhs7nm6wc5",
+  "gonka1ddswmmmn38esxegjf6qw36mt4aqyw6etvysy5x",
+  "gonka10fynmy2npvdvew0vj2288gz8ljfvmjs35lat8n",
+  "gonka1v8gk5z7gcv72447yfcd2y8g78qk05yc4f3nk4w",
+  "gonka1gndhek2h2y5849wf6tmw6gnw9qn4vysgljed0u",
+];
 
 function requireGonkaAddress(addr: string | null | undefined) {
   if (!addr || typeof addr !== "string") {
@@ -48,12 +57,16 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
     [];
 
   if (Array.isArray(list)) {
-    const provider = list.find((p: any) => {
-      const addr = p?.index || p?.address || p?.provider_address || p?.providerAddress;
-      return typeof addr === "string" && addr.startsWith("gonka1");
+    const eligible = list.filter((p: any) => {
+      const index = String(p?.index || "");
+      const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
+      return ALLOWED_TRANSFER_AGENTS.includes(index) && Boolean(inferenceUrl);
     });
 
-    if (provider) {
+    console.log("Eligible allowed providers:", eligible.length);
+
+    if (eligible.length > 0) {
+      const provider = eligible[Math.floor(Math.random() * eligible.length)];
       const providerAddress = String(
         provider.index || provider.address || provider.provider_address || provider.providerAddress
       );
