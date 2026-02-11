@@ -6,6 +6,7 @@ import { calculateCostUsd, estimateCostUsd, PRICING } from "@/lib/api/pricing";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { db } from "@/lib/db";
 import { transactions, usageLogs, users } from "@/lib/db/schema";
+import { gonkaInference } from "@/lib/gonka/inference";
 import { getBalance } from "@/lib/wallet/gonka";
 
 class ApiError extends Error {
@@ -102,7 +103,12 @@ export async function POST(req: Request) {
     }
 
     const [dbUser] = await db
-      .select({ id: users.id, balanceUsd: users.balanceUsd, gonkaAddress: users.gonkaAddress })
+      .select({
+        id: users.id,
+        balanceUsd: users.balanceUsd,
+        gonkaAddress: users.gonkaAddress,
+        encryptedMnemonic: users.encryptedMnemonic,
+      })
       .from(users)
       .where(eq(users.clerkId, clerkId))
       .limit(1);
@@ -111,7 +117,7 @@ export async function POST(req: Request) {
       throw new ApiError(400, "User not provisioned", "invalid_request_error", "user_not_provisioned");
     }
 
-    if (!dbUser.gonkaAddress) {
+    if (!dbUser.gonkaAddress || !dbUser.encryptedMnemonic) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
     }
     console.log("User:", dbUser?.id, "Gonka Address:", dbUser?.gonkaAddress);
@@ -141,36 +147,15 @@ export async function POST(req: Request) {
       reservedUsd = true;
     }
 
-    const baseUrl = process.env.GONKA_API_URL ?? process.env.GONKA_API_BASE_URL;
-    const gonkaKey = process.env.GONKA_API_KEY;
-
-    if (!baseUrl || !gonkaKey) {
-      // Refund reserved funds since we can't proceed.
-      if (reservedUsd) {
-        await adjustBalance(dbUser.id, reserveUsd);
-      }
-      throw new ApiError(500, "Gonka API not configured", "server_error", "missing_upstream_config");
-    }
-
-    const upstreamUrl = new URL("/v1/chat/completions", baseUrl).toString();
-
-    const upstreamBody = {
+    console.log("Calling Gonka inference...");
+    const upstreamRes = await gonkaInference({
+      encryptedMnemonic: dbUser.encryptedMnemonic,
+      gonkaAddress: dbUser.gonkaAddress,
       model,
       messages,
       stream,
       temperature,
       max_tokens: maxTokens,
-      ...(stream ? { stream_options: { include_usage: true } } : null),
-    };
-
-    console.log("Calling Gonka inference...");
-    const upstreamRes = await fetch(upstreamUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${gonkaKey}`,
-      },
-      body: JSON.stringify(upstreamBody),
     });
     console.log("Gonka response status:", upstreamRes.status);
 
