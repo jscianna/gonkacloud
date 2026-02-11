@@ -19,10 +19,12 @@ function generateApiKey() {
 export async function GET() {
   try {
     const clerkId = await requireAuth();
+    console.log("[api/keys][GET] request", { clerkId });
 
     const [dbUser] = await db.select({ id: users.id }).from(users).where(eq(users.clerkId, clerkId)).limit(1);
 
     if (!dbUser) {
+      console.log("[api/keys][GET] no provisioned db user", { clerkId });
       return NextResponse.json({ keys: [] }, { status: 200 });
     }
 
@@ -41,6 +43,7 @@ export async function GET() {
 
     return NextResponse.json({ keys }, { status: 200 });
   } catch (error) {
+    console.error("[api/keys][GET] error", error);
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -52,17 +55,21 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const clerkId = await requireAuth();
+    console.log("[api/keys][POST] request", { clerkId });
 
     const body = (await req.json().catch(() => null)) as { name?: string } | null;
     const name = (body?.name ?? "").trim();
+    console.log("[api/keys][POST] payload parsed", { hasBody: Boolean(body), nameLength: name.length });
 
     if (!name || name.length > 120) {
+      console.warn("[api/keys][POST] invalid name", { nameLength: name.length });
       return NextResponse.json({ error: "Invalid name" }, { status: 400 });
     }
 
     const [dbUser] = await db.select({ id: users.id }).from(users).where(eq(users.clerkId, clerkId)).limit(1);
 
     if (!dbUser) {
+      console.warn("[api/keys][POST] user not provisioned", { clerkId });
       return NextResponse.json({ error: "User not provisioned" }, { status: 400 });
     }
 
@@ -87,11 +94,13 @@ export async function POST(req: Request) {
         revokedAt: apiKeys.revokedAt,
       });
 
+    console.log("[api/keys][POST] key created", { userId: dbUser.id, apiKeyId: created?.id });
     return NextResponse.json({
       key: fullKey,
       apiKey: created,
     });
   } catch (error) {
+    console.error("[api/keys][POST] error", error);
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

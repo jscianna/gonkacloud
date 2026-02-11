@@ -69,6 +69,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
   const [createdFullKey, setCreatedFullKey] = useState<string | null>(null);
   const [createdKeyId, setCreatedKeyId] = useState<string | null>(null);
   const [copyOk, setCopyOk] = useState<boolean | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const activeCount = useMemo(() => keys.filter((k) => !k.revokedAt).length, [keys]);
 
@@ -82,8 +83,10 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
   async function createKey() {
     setCreating(true);
     setCopyOk(null);
+    setCreateError(null);
 
     try {
+      console.log("[api-keys-client] creating key", { nameLength: newKeyName.trim().length });
       const res = await fetch("/api/keys", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -91,10 +94,15 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
       });
 
       if (!res.ok) {
+        const errorPayload = (await res.json().catch(() => null)) as { error?: string } | null;
+        const message = errorPayload?.error ?? "Failed to create key";
+        console.error("[api-keys-client] create failed", { status: res.status, message });
+        setCreateError(message);
         return;
       }
 
       const payload = (await res.json()) as CreateResponse;
+      console.log("[api-keys-client] create success", { apiKeyId: payload.apiKey.id });
       setCreatedFullKey(payload.key);
       setCreatedKeyId(payload.apiKey.id);
       setNewKeyName("");
@@ -148,6 +156,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
                 onChange={(e) => setNewKeyName(e.target.value)}
               />
             </div>
+            {createError ? <p className="mt-3 text-sm text-rose-700">{createError}</p> : null}
 
             <DialogFooter>
               <DialogClose asChild>
