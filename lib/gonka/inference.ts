@@ -155,7 +155,7 @@ export async function gonkaInference(params: {
     console.log("Gonka inference URL:", provider.inferenceUrl);
     console.log("Gonka inference headers:", {
       Authorization: `${signature.substring(0, 20)}...`,
-      "X-Requester-Address": providerAddress,
+      "X-Requester-Address": params.gonkaAddress,
       "X-Timestamp": timestampNs.toString(),
     });
 
@@ -168,7 +168,7 @@ export async function gonkaInference(params: {
       headers: {
         "content-type": "application/json",
         authorization: signature,
-        "x-requester-address": providerAddress,
+        "x-requester-address": params.gonkaAddress,
         "x-timestamp": timestampNs.toString(),
       },
       body: payloadJson,
