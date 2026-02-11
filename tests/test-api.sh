@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_URL="${APP_URL:-http://localhost:3000}"
-MODEL="${MODEL:-Qwen/QwQ-32B}"
+MODEL="${MODEL:-Qwen/Qwen3-235B-A22B-Instruct-2507-FP8}"
 
 if [[ -z "${DATABASE_URL:-}" ]]; then
   echo "DATABASE_URL is required (used to create a temporary API key + verify balance/usage)" >&2

@@ -25,10 +25,10 @@ type Conversation = {
   updatedAt: number;
 };
 
-const MODELS = ["Qwen/QwQ-32B"] as const;
+const MODELS = ["Qwen/Qwen3-235B-A22B-Instruct-2507-FP8"] as const;
 
 const PRICING: Record<string, { input: number; output: number }> = {
-  "Qwen/QwQ-32B": { input: 0.5, output: 1.0 },
+  "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8": { input: 0.5, output: 1.0 },
 };
 
 function calcCost(model: string, prompt: number, completion: number) {
