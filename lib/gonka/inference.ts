@@ -6,7 +6,8 @@ import { decrypt } from "@/lib/wallet/kms";
 import { signGonkaRequest } from "@/lib/gonka/sign";
 
 const GONKA_NODES = ["http://node1.gonka.ai:8000", "http://node2.gonka.ai:8000", "http://node3.gonka.ai:8000"];
-const FETCH_TIMEOUT_MS = 10_000;
+const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
+const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 
 function requireGonkaAddress(addr: string | null | undefined) {
   if (!addr || typeof addr !== "string") {
@@ -15,12 +16,17 @@ function requireGonkaAddress(addr: string | null | undefined) {
   return addr;
 }
 
-async function getProviderAddress(nodeUrl: string): Promise<string> {
+type SelectedProvider = {
+  providerAddress: string;
+  inferenceUrl: string;
+};
+
+async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
   const participantsUrl = `${nodeUrl}/v1/epochs/current/participants`;
   console.log("Fetching participants from:", participantsUrl);
 
   const participantsController = new AbortController();
-  const participantsTimeout = setTimeout(() => participantsController.abort(), FETCH_TIMEOUT_MS);
+  const participantsTimeout = setTimeout(() => participantsController.abort(), PROVIDER_FETCH_TIMEOUT_MS);
 
   const participantsRes = await fetch(participantsUrl, { signal: participantsController.signal }).finally(() =>
     clearTimeout(participantsTimeout)
@@ -34,15 +40,34 @@ async function getProviderAddress(nodeUrl: string): Promise<string> {
   console.log("Participants response keys:", Object.keys(data ?? {}));
   console.log("First participant (sample):", JSON.stringify(data).substring(0, 500));
 
-  // Find any Gonka address in the payload for now.
-  const jsonStr = JSON.stringify(data);
-  const match = jsonStr.match(/gonka1[a-z0-9]{38}/);
-  if (match) {
-    console.log("Found provider address:", match[0]);
-    return match[0];
+  const list =
+    data?.active_participants?.participants ||
+    data?.participants ||
+    data?.data?.active_participants?.participants ||
+    data?.data?.participants ||
+    [];
+
+  if (Array.isArray(list)) {
+    const provider = list.find((p: any) => {
+      const addr = p?.index || p?.address || p?.provider_address || p?.providerAddress;
+      return typeof addr === "string" && addr.startsWith("gonka1");
+    });
+
+    if (provider) {
+      const providerAddress = String(
+        provider.index || provider.address || provider.provider_address || provider.providerAddress
+      );
+      const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
+
+      if (providerAddress && inferenceUrl) {
+        console.log("Selected provider:", providerAddress);
+        console.log("Selected provider inference_url:", inferenceUrl);
+        return { providerAddress, inferenceUrl };
+      }
+    }
   }
 
-  throw new Error("Could not find provider address in participants");
+  throw new Error("Could not find provider address + inference_url in participants");
 }
 
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
@@ -86,8 +111,9 @@ export async function gonkaInference(params: {
 
     console.log("Step: select Gonka node");
     const nodeUrl = GONKA_NODES[Math.floor(Math.random() * GONKA_NODES.length)];
-    console.log("Step: fetch provider address");
-    const providerAddress = await getProviderAddress(nodeUrl);
+    console.log("Step: fetch provider");
+    const provider = await getProvider(nodeUrl);
+    const providerAddress = provider.providerAddress;
 
     const payload = {
       model: params.model,
@@ -103,28 +129,28 @@ export async function gonkaInference(params: {
 
     const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerAddress);
 
-    const requester = requireGonkaAddress(params.gonkaAddress);
-    const targetUrl = `${nodeUrl}/v1/chat/completions`;
+    requireGonkaAddress(params.gonkaAddress);
+    const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
     console.log("Target URL:", targetUrl);
     console.log("Provider address:", providerAddress);
 
-    console.log("Gonka inference URL:", nodeUrl);
+    console.log("Gonka inference URL:", provider.inferenceUrl);
     console.log("Gonka inference headers:", {
       Authorization: `${signature.substring(0, 20)}...`,
-      "X-Requester-Address": params.gonkaAddress,
+      "X-Requester-Address": providerAddress,
       "X-Timestamp": timestampNs.toString(),
     });
 
     console.log("Step: send inference request");
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timeoutId = setTimeout(() => controller.abort(), INFERENCE_FETCH_TIMEOUT_MS);
 
     const res = await fetch(targetUrl, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         authorization: signature,
-        "x-requester-address": requester,
+        "x-requester-address": providerAddress,
         "x-timestamp": timestampNs.toString(),
       },
       body: payloadJson,
