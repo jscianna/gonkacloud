@@ -1,30 +1,35 @@
-import crypto from "crypto";
-import secp256k1 from "secp256k1";
-
-function concatMessage(payloadJson: string, timestampNs: bigint, providerAddress: string) {
-  const payloadBytes = Buffer.from(payloadJson, "utf8");
-  const tsBytes = Buffer.from(timestampNs.toString(), "utf8");
-  const providerBytes = Buffer.from(providerAddress, "utf8");
-  return Buffer.concat([payloadBytes, tsBytes, providerBytes]);
-}
+import { sha256 } from "@cosmjs/crypto";
+import { fromHex } from "@cosmjs/encoding";
+import * as secp256k1 from "secp256k1";
 
 export function signGonkaRequest(
-  payloadJson: string,
+  payload: string,
   privateKeyHex: string,
   timestampNs: bigint,
   providerAddress: string
 ): string {
-  const privKey = Buffer.from(privateKeyHex, "hex");
-  if (privKey.length !== 32) {
-    throw new Error("Invalid private key length");
+  const payloadBytes = new TextEncoder().encode(payload);
+  const timestampBytes = new TextEncoder().encode(timestampNs.toString());
+  const providerBytes = new TextEncoder().encode(providerAddress);
+
+  // Concatenate: payload || timestamp || provider
+  const message = new Uint8Array([...payloadBytes, ...timestampBytes, ...providerBytes]);
+
+  const messageHash = sha256(message);
+  const privateKey = fromHex(privateKeyHex);
+
+  const { signature } = secp256k1.ecdsaSign(messageHash, privateKey);
+
+  // Normalize S value (low-S)
+  const r = signature.slice(0, 32);
+  const s = signature.slice(32, 64);
+  const order = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+  let sInt = BigInt(`0x${Buffer.from(s).toString("hex")}`);
+  if (sInt > order / 2n) {
+    sInt = order - sInt;
   }
+  const normalizedS = Buffer.from(sInt.toString(16).padStart(64, "0"), "hex");
 
-  const msg = concatMessage(payloadJson, timestampNs, providerAddress);
-  const hash = crypto.createHash("sha256").update(msg).digest();
-
-  const { signature } = secp256k1.ecdsaSign(hash, privKey);
-  const normalized = secp256k1.signatureNormalize(signature);
-
-  // signature is r||s (64 bytes)
-  return Buffer.from(normalized).toString("base64");
+  const fullSig = Buffer.concat([Buffer.from(r), normalizedS]);
+  return fullSig.toString("base64");
 }

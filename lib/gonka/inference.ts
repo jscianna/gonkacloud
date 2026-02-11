@@ -1,15 +1,31 @@
 import { Bip39, EnglishMnemonic, Slip10, Slip10Curve, stringToPath } from "@cosmjs/crypto";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { toHex } from "@cosmjs/encoding";
 
 import { decrypt } from "@/lib/wallet/kms";
-import { getRandomNode } from "@/lib/gonka/config";
 import { signGonkaRequest } from "@/lib/gonka/sign";
+
+const GONKA_NODES = ["http://node1.gonka.ai:8000", "http://node2.gonka.ai:8000", "http://node3.gonka.ai:8000"];
 
 function requireGonkaAddress(addr: string | null | undefined) {
   if (!addr || typeof addr !== "string") {
     throw new Error("Missing gonkaAddress");
   }
   return addr;
+}
+
+async function getProviderAddress(nodeUrl: string): Promise<string> {
+  const res = await fetch(`${nodeUrl}/v1/info`);
+  if (!res.ok) {
+    throw new Error("Failed to fetch provider info");
+  }
+
+  const data = (await res.json().catch(() => null)) as any;
+  const provider = data?.provider_address || data?.providerAddress || data?.address;
+  if (!provider) {
+    throw new Error("Missing provider address");
+  }
+  return String(provider);
 }
 
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
@@ -36,26 +52,23 @@ export async function gonkaInference(params: {
   try {
     mnemonic = await decrypt(params.encryptedMnemonic);
 
+    // Restore wallet and ensure mnemonic/account are valid.
+    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "gonka" });
+    const accounts = await wallet.getAccounts();
+    if (!accounts[0]) {
+      throw new Error("Failed to derive wallet account");
+    }
+
     // Private key must exist in memory only for signing.
     const privateKeyHex = await derivePrivateKeyHexFromMnemonic(mnemonic);
 
-    const nodeUrl = getRandomNode();
-
-    const infoRes = await fetch(`${nodeUrl}/v1/info`, { method: "GET" });
-    if (!infoRes.ok) {
-      throw new Error("Failed to fetch provider info");
-    }
-
-    const info = (await infoRes.json().catch(() => null)) as any;
-    const providerAddress = String(info?.providerAddress ?? info?.provider_address ?? info?.address ?? "");
-    if (!providerAddress) {
-      throw new Error("Missing provider address");
-    }
+    const nodeUrl = GONKA_NODES[Math.floor(Math.random() * GONKA_NODES.length)];
+    const providerAddress = await getProviderAddress(nodeUrl);
 
     const payload = {
       model: params.model,
       messages: params.messages,
-      stream: params.stream,
+      stream: params.stream || false,
       temperature: params.temperature,
       max_tokens: params.max_tokens,
     };
