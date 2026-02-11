@@ -81,16 +81,29 @@ export async function gonkaInference(params: {
 
     const requester = requireGonkaAddress(params.gonkaAddress);
 
-    const res = await fetch(`${nodeUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: signature,
-        "x-requester-address": requester,
-        "x-timestamp": timestampNs.toString(),
-      },
-      body: payloadJson,
+    console.log("Gonka inference URL:", nodeUrl);
+    console.log("Gonka inference headers:", {
+      Authorization: `${signature.substring(0, 20)}...`,
+      "X-Requester-Address": params.gonkaAddress,
+      "X-Timestamp": timestampNs.toString(),
     });
+
+    let res: Response;
+    try {
+      res = await fetch(`${nodeUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: signature,
+          "x-requester-address": requester,
+          "x-timestamp": timestampNs.toString(),
+        },
+        body: payloadJson,
+      });
+    } catch (fetchError: any) {
+      console.error("Fetch error details:", fetchError?.cause || fetchError?.message);
+      throw fetchError;
+    }
 
     return res;
   } finally {
