@@ -5,7 +5,7 @@ import { toHex } from "@cosmjs/encoding";
 import { decrypt } from "@/lib/wallet/kms";
 import { signGonkaRequest } from "@/lib/gonka/sign";
 
-const GONKA_NODES = ["http://node1.gonka.ai:8000", "http://node2.gonka.ai:8000", "http://node3.gonka.ai:8000"];
+const PARTICIPANT_BOOTSTRAP_NODES = ["http://node2.gonka.ai:8000", "http://node1.gonka.ai:8000"];
 const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 
@@ -70,6 +70,26 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
   throw new Error("Could not find provider address + inference_url in participants");
 }
 
+async function getProviderWithFallback(): Promise<SelectedProvider> {
+  let lastError: unknown;
+
+  for (const nodeUrl of PARTICIPANT_BOOTSTRAP_NODES) {
+    try {
+      console.log("Trying participant bootstrap node:", nodeUrl);
+      return await getProvider(nodeUrl);
+    } catch (error) {
+      lastError = error;
+      console.warn("Participant bootstrap failed:", nodeUrl, error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  throw new Error(
+    `Failed to fetch participants from bootstrap nodes. Last error: ${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    }`
+  );
+}
+
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
   // Cosmos standard HD path
   const hdPath = stringToPath("m/44'/118'/0'/0/0");
@@ -109,10 +129,8 @@ export async function gonkaInference(params: {
     console.log("Step: derive private key hex");
     const privateKeyHex = await derivePrivateKeyHexFromMnemonic(mnemonic);
 
-    console.log("Step: select Gonka node");
-    const nodeUrl = GONKA_NODES[Math.floor(Math.random() * GONKA_NODES.length)];
-    console.log("Step: fetch provider");
-    const provider = await getProvider(nodeUrl);
+    console.log("Step: fetch provider using bootstrap fallback");
+    const provider = await getProviderWithFallback();
     const providerAddress = provider.providerAddress;
 
     const payload = {
