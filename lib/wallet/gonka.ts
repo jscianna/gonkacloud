@@ -1,5 +1,6 @@
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { SigningStargateClient } from "@cosmjs/stargate";
+import { QueryClient, setupBankExtension, SigningStargateClient } from "@cosmjs/stargate";
+import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
 
 import { decrypt, encrypt } from "@/lib/wallet/kms";
 
@@ -69,20 +70,13 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
 }
 
 export async function getBalance(address: string): Promise<{ gonka: string; ngonka: string }> {
+  let tmClient: Tendermint37Client | null = null;
+
   try {
-    const response = await fetch(`http://node2.gonka.ai:8000/cosmos/bank/v1beta1/balances/${address}`, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      console.error("Balance fetch failed:", response.status);
-      return { gonka: "0", ngonka: "0" };
-    }
-
-    const data = (await response.json()) as { balances?: Array<{ denom?: string; amount?: string }> };
-    const balance = data.balances?.find((b) => b.denom === "ngonka");
-    const ngonka = balance?.amount || "0";
+    tmClient = await Tendermint37Client.connect("http://node2.gonka.ai:8000/chain-rpc");
+    const queryClient = QueryClient.withExtensions(tmClient, setupBankExtension);
+    const balance = await queryClient.bank.balance(address, "ngonka");
+    const ngonka = balance.amount || "0";
 
     const gonkaNum = Number(ngonka) / 1_000_000_000;
 
@@ -93,6 +87,8 @@ export async function getBalance(address: string): Promise<{ gonka: string; ngon
   } catch (error) {
     console.error("Balance fetch error:", error);
     return { gonka: "0", ngonka: "0" };
+  } finally {
+    tmClient?.disconnect();
   }
 }
 
