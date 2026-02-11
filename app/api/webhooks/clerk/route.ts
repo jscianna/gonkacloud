@@ -70,7 +70,6 @@ export async function POST(req: Request) {
           email,
           balanceUsd: "0.00",
           gonkaAddress: wallet.address,
-          gonkaPubkey: wallet.pubkey,
           encryptedMnemonic: wallet.encryptedMnemonic,
         })
         .onConflictDoUpdate({
@@ -79,7 +78,6 @@ export async function POST(req: Request) {
             email,
             balanceUsd: "0.00",
             gonkaAddress: wallet.address,
-            gonkaPubkey: wallet.pubkey,
             encryptedMnemonic: wallet.encryptedMnemonic,
           },
         });

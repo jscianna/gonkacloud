@@ -18,7 +18,7 @@ function ngonkaToGonkaString(ngonka: string) {
   return fracStr.length ? `${whole.toString()}.${fracStr}` : whole.toString();
 }
 
-export async function generateWallet(): Promise<{ address: string; pubkey: string; encryptedMnemonic: string }> {
+export async function generateWallet(): Promise<{ address: string; encryptedMnemonic: string }> {
   // 24-word mnemonic
   const wallet = await DirectSecp256k1HdWallet.generate(24, { prefix: ADDRESS_PREFIX });
 
@@ -33,12 +33,8 @@ export async function generateWallet(): Promise<{ address: string; pubkey: strin
 
     const encryptedMnemonic = await encrypt(mnemonic);
 
-    // pubkey is safe to store; encode as base64
-    const pubkeyB64 = Buffer.from(account.pubkey).toString("base64");
-
     return {
       address: account.address,
-      pubkey: pubkeyB64,
       encryptedMnemonic,
     };
   } finally {

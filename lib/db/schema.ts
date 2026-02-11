@@ -8,7 +8,6 @@ export const users = pgTable("users", {
   balanceUsd: decimal("balance_usd", { precision: 12, scale: 4 }).notNull().default("0"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
   gonkaAddress: varchar("gonka_address", { length: 255 }),
-  gonkaPubkey: varchar("gonka_pubkey", { length: 512 }),
   encryptedMnemonic: text("encrypted_mnemonic"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
