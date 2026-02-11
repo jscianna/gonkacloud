@@ -16,63 +16,33 @@ function requireGonkaAddress(addr: string | null | undefined) {
 }
 
 async function getProviderAddress(nodeUrl: string): Promise<string> {
-  const infoUrl = `${nodeUrl}/v1/info`;
-  console.log("Fetching provider address from:", infoUrl);
-
-  const infoController = new AbortController();
-  const infoTimeout = setTimeout(() => infoController.abort(), FETCH_TIMEOUT_MS);
-
-  try {
-    const res = await fetch(infoUrl, { signal: infoController.signal }).finally(() => clearTimeout(infoTimeout));
-    if (res.ok) {
-      const data = (await res.json().catch(() => null)) as any;
-      const provider = data?.provider_address || data?.providerAddress || data?.address;
-      if (provider) {
-        return String(provider);
-      }
-      console.warn("Provider missing in /v1/info payload");
-    } else {
-      console.warn("Provider /v1/info response not ok:", res.status);
-    }
-  } catch (error: any) {
-    console.error("Provider /v1/info fetch error:", error?.cause || error?.message || error);
-  }
-
-  // Fallback: some deployments expose participants list instead of /v1/info.
   const participantsUrl = `${nodeUrl}/v1/epochs/current/participants`;
-  console.log("Fetching provider from participants:", participantsUrl);
+  console.log("Fetching participants from:", participantsUrl);
 
   const participantsController = new AbortController();
   const participantsTimeout = setTimeout(() => participantsController.abort(), FETCH_TIMEOUT_MS);
 
-  try {
-    const participantsRes = await fetch(participantsUrl, { signal: participantsController.signal }).finally(() =>
-      clearTimeout(participantsTimeout)
-    );
+  const participantsRes = await fetch(participantsUrl, { signal: participantsController.signal }).finally(() =>
+    clearTimeout(participantsTimeout)
+  );
 
-    if (participantsRes.ok) {
-      const payload = (await participantsRes.json().catch(() => null)) as any;
-      const first =
-        payload?.participants?.[0] ||
-        payload?.data?.participants?.[0] ||
-        payload?.data?.[0] ||
-        payload?.[0] ||
-        null;
-      const provider = first?.provider_address || first?.providerAddress || first?.address;
-      if (provider) {
-        return String(provider);
-      }
-      console.warn("Provider missing in participants payload");
-    } else {
-      console.warn("Participants endpoint response not ok:", participantsRes.status);
-    }
-  } catch (error: any) {
-    console.error("Participants fetch error:", error?.cause || error?.message || error);
+  if (!participantsRes.ok) {
+    throw new Error(`Failed to fetch participants: ${participantsRes.status}`);
   }
 
-  // Temporary fallback for diagnostics.
-  console.warn("Falling back to temporary provider address");
-  return "gonka1provider";
+  const data = (await participantsRes.json()) as any;
+  console.log("Participants response keys:", Object.keys(data ?? {}));
+  console.log("First participant (sample):", JSON.stringify(data).substring(0, 500));
+
+  // Find any Gonka address in the payload for now.
+  const jsonStr = JSON.stringify(data);
+  const match = jsonStr.match(/gonka1[a-z0-9]{38}/);
+  if (match) {
+    console.log("Found provider address:", match[0]);
+    return match[0];
+  }
+
+  throw new Error("Could not find provider address in participants");
 }
 
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
