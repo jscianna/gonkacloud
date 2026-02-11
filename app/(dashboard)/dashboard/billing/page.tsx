@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 
 import { BillingClient } from "@/components/dashboard/billing-client";
+import { GonkaDepositCard } from "@/components/dashboard/gonka-deposit-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCurrentUser } from "@/lib/auth";
@@ -97,6 +98,12 @@ export default async function BillingPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardContent className="pt-6">
+          <GonkaDepositCard />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
