@@ -8,14 +8,6 @@ import { signGonkaRequest } from "@/lib/gonka/sign";
 const PARTICIPANT_BOOTSTRAP_NODES = ["http://node2.gonka.ai:8000", "http://node1.gonka.ai:8000"];
 const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
-const ALLOWED_TRANSFER_AGENTS = [
-  "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
-  "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
-  "gonka1ddswmmmn38esxegjf6qw36mt4aqyw6etvysy5x",
-  "gonka10fynmy2npvdvew0vj2288gz8ljfvmjs35lat8n",
-  "gonka1v8gk5z7gcv72447yfcd2y8g78qk05yc4f3nk4w",
-  "gonka1gndhek2h2y5849wf6tmw6gnw9qn4vysgljed0u",
-];
 
 function requireGonkaAddress(addr: string | null | undefined) {
   if (!addr || typeof addr !== "string") {
@@ -28,6 +20,19 @@ type SelectedProvider = {
   providerTransferAddress: string;
   inferenceUrl: string;
 };
+
+function getProviderWeight(provider: any): number {
+  const rawWeight =
+    provider?.weight ??
+    provider?.inference_weight ??
+    provider?.voting_power ??
+    provider?.capacity ??
+    provider?.stake ??
+    0;
+
+  const parsed = Number(rawWeight);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
   const participantsUrl = `${nodeUrl}/v1/epochs/current/participants`;
@@ -59,15 +64,24 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
     const eligible = list.filter((p: any) => {
       const index = String(p?.index || "");
       const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
-      return ALLOWED_TRANSFER_AGENTS.includes(index) && Boolean(inferenceUrl);
+      return Boolean(index) && Boolean(inferenceUrl);
     });
 
-    console.log("Eligible allowed providers:", eligible.length);
-
     if (eligible.length > 0) {
-      const provider = eligible[Math.floor(Math.random() * eligible.length)];
+      const ranked = eligible.sort((a: any, b: any) => getProviderWeight(b) - getProviderWeight(a));
+      const topProviders = ranked.slice(0, Math.min(5, ranked.length));
+      const provider = topProviders[Math.floor(Math.random() * topProviders.length)];
       const providerTransferAddress = String(provider.index || "");
       const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
+
+      console.log(
+        "Provider candidate count:",
+        eligible.length,
+        "top candidate count:",
+        topProviders.length,
+        "selected weight:",
+        getProviderWeight(provider)
+      );
 
       if (providerTransferAddress && inferenceUrl) {
         console.log("Selected provider:", providerTransferAddress);

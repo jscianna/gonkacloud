@@ -9,15 +9,6 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { decrypt } from "@/lib/wallet/kms";
 
-const ALLOWED_TRANSFER_AGENTS = [
-  "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
-  "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
-  "gonka1ddswmmmn38esxegjf6qw36mt4aqyw6etvysy5x",
-  "gonka10fynmy2npvdvew0vj2288gz8ljfvmjs35lat8n",
-  "gonka1v8gk5z7gcv72447yfcd2y8g78qk05yc4f3nk4w",
-  "gonka1gndhek2h2y5849wf6tmw6gnw9qn4vysgljed0u",
-];
-
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
   const hdPath = stringToPath("m/44'/118'/0'/0/0");
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
@@ -52,18 +43,11 @@ export async function POST(req: Request) {
     const privateKeyHex = await derivePrivateKeyHexFromMnemonic(mnemonic);
 
     const endpoints = await resolveEndpoints({ sourceUrl: "http://node2.gonka.ai:8000" });
-    const filteredEndpoints = endpoints.filter((endpoint) =>
-      ALLOWED_TRANSFER_AGENTS.includes(endpoint.transferAddress || endpoint.address || "")
-    );
-
-    if (filteredEndpoints.length === 0) {
-      return NextResponse.json({ error: "No allowed transfer-agent endpoints resolved" }, { status: 500 });
-    }
 
     const client = new GonkaOpenAI({
       gonkaPrivateKey: `0x${privateKeyHex}`,
       gonkaAddress: user.gonkaAddress,
-      endpoints: filteredEndpoints,
+      endpoints,
     });
 
     const response = await client.chat.completions.create({
