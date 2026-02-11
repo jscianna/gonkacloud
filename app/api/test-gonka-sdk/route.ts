@@ -25,7 +25,8 @@ async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string
   return toHex(privkey);
 }
 
-export async function GET() {
+export async function POST(req: Request) {
+  void req;
   let mnemonic: string | null = null;
 
   try {
