@@ -59,16 +59,17 @@ async function adjustBalance(userId: string, deltaUsd: number) {
 }
 
 export async function POST(req: Request) {
-  const { userId: clerkId } = await auth();
-
-  if (!clerkId) {
-    return NextResponse.json(
-      { error: { message: "Unauthorized", type: "authentication_error", code: "unauthorized" } },
-      { status: 401 }
-    );
-  }
-
   try {
+    console.log("=== CHAT REQUEST STARTED ===");
+    const { userId: clerkId } = await auth();
+
+    if (!clerkId) {
+      return NextResponse.json(
+        { error: { message: "Unauthorized", type: "authentication_error", code: "unauthorized" } },
+        { status: 401 }
+      );
+    }
+
     const rl = await rateLimit(`chat:${clerkId}`);
     if (!rl.success) {
       const res = jsonError(new ApiError(429, "Rate limit exceeded", "rate_limit_error", "rate_limited"));
@@ -78,7 +79,9 @@ export async function POST(req: Request) {
       return res;
     }
 
-    const body = (await req.json().catch(() => null)) as any;
+    const loggedBody = (await req.clone().json().catch(() => null)) as any;
+    console.log("Request body:", loggedBody);
+    const body = loggedBody;
     if (!body || typeof body !== "object") {
       throw new ApiError(400, "Invalid JSON body", "invalid_request_error", "invalid_json");
     }
@@ -111,6 +114,7 @@ export async function POST(req: Request) {
     if (!dbUser.gonkaAddress) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
     }
+    console.log("User:", dbUser?.id, "Gonka Address:", dbUser?.gonkaAddress);
 
     const gonkaBalance = await getBalance(dbUser.gonkaAddress);
     if (Number(gonkaBalance.ngonka) <= 0) {
@@ -159,6 +163,7 @@ export async function POST(req: Request) {
       ...(stream ? { stream_options: { include_usage: true } } : null),
     };
 
+    console.log("Calling Gonka inference...");
     const upstreamRes = await fetch(upstreamUrl, {
       method: "POST",
       headers: {
@@ -167,6 +172,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify(upstreamBody),
     });
+    console.log("Gonka response status:", upstreamRes.status);
 
     if (!upstreamRes.ok || !upstreamRes.body) {
       const text = await upstreamRes.text().catch(() => "");
@@ -316,14 +322,11 @@ export async function POST(req: Request) {
     });
 
     return res;
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return jsonError(error);
-    }
-
-    return NextResponse.json(
-      { error: { message: "Internal server error", type: "server_error", code: "internal_error" } },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error("=== CHAT ERROR ===");
+    console.error("Error name:", error?.name);
+    console.error("Error message:", error?.message);
+    console.error("Error stack:", error?.stack);
+    return NextResponse.json({ error: error?.message ?? "Internal server error" }, { status: 500 });
   }
 }
