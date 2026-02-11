@@ -1,12 +1,13 @@
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { QueryClient, setupBankExtension, SigningStargateClient } from "@cosmjs/stargate";
-import { Tendermint37Client } from "@cosmjs/tendermint-rpc";
+import { SigningStargateClient } from "@cosmjs/stargate";
 
 import { decrypt, encrypt } from "@/lib/wallet/kms";
 
 export const CHAIN_ID = process.env.GONKA_CHAIN_ID || "gonka-mainnet";
 export const ADDRESS_PREFIX = "gonka";
 export const DENOM = "ngonka";
+const GONKA_API_URL = "https://gonka.gg/api/public";
+const GONKA_API_KEY = process.env.GONKA_API_KEY;
 
 const NGONKA_PER_GONKA = 1_000_000_000n;
 const DEFAULT_RPC_URL = "http://node2.gonka.ai:8000/chain-rpc";
@@ -70,25 +71,43 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
 }
 
 export async function getBalance(address: string): Promise<{ gonka: string; ngonka: string }> {
-  let tmClient: Tendermint37Client | null = null;
-
   try {
-    tmClient = await Tendermint37Client.connect("http://node2.gonka.ai:8000/chain-rpc");
-    const queryClient = QueryClient.withExtensions(tmClient, setupBankExtension);
-    const balance = await queryClient.bank.balance(address, "ngonka");
-    const ngonka = balance.amount || "0";
+    const response = await fetch(`${GONKA_API_URL}/search?query=${address}`, {
+      headers: {
+        Authorization: `Bearer ${GONKA_API_KEY}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
 
-    const gonkaNum = Number(ngonka) / 1_000_000_000;
+    if (!response.ok) {
+      console.error("Balance fetch failed:", response.status);
+      return { gonka: "0", ngonka: "0" };
+    }
 
-    return {
-      ngonka,
-      gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+    const data = (await response.json()) as {
+      type?: string;
+      found?: boolean;
+      data?: {
+        balances?: Array<{ denom?: string; amount?: string }>;
+      };
     };
+
+    if (data.type === "wallet" && data.found && data.data?.balances) {
+      const balance = data.data.balances.find((b) => b.denom === "ngonka");
+      const ngonka = balance?.amount || "0";
+      const gonkaNum = Number(ngonka) / 1_000_000_000;
+
+      return {
+        ngonka,
+        gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+      };
+    }
+
+    return { gonka: "0", ngonka: "0" };
   } catch (error) {
     console.error("Balance fetch error:", error);
     return { gonka: "0", ngonka: "0" };
-  } finally {
-    tmClient?.disconnect();
   }
 }
 
