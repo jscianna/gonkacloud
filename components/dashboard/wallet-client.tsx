@@ -2,14 +2,46 @@
 
 import { Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
 export function WalletClient({ address }: { address: string | null }) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!address) {
-    return <p className="text-sm text-slate-600">Wallet not provisioned yet.</p>;
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-slate-600">Wallet not provisioned yet.</p>
+        <Button
+          size="sm"
+          disabled={provisioning}
+          onClick={async () => {
+            setProvisioning(true);
+            setError(null);
+            try {
+              const res = await fetch("/api/admin/provision-wallet", { method: "POST" });
+              const data = (await res.json().catch(() => null)) as { error?: string } | null;
+              if (!res.ok) {
+                setError(data?.error ?? "Failed to provision wallet");
+                return;
+              }
+              router.refresh();
+            } catch {
+              setError("Failed to provision wallet");
+            } finally {
+              setProvisioning(false);
+            }
+          }}
+        >
+          {provisioning ? "Provisioning..." : "Provision Wallet"}
+        </Button>
+        {error ? <p className="text-sm text-rose-700">{error}</p> : null}
+      </div>
+    );
   }
 
   return (

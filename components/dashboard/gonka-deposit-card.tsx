@@ -2,6 +2,7 @@
 
 import { Check, Copy, QrCode, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,11 @@ function truncateAddress(address: string) {
 }
 
 export function GonkaDepositCard() {
+  const router = useRouter();
   const [payload, setPayload] = useState<WalletBalancePayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const [copied, setCopied] = useState(false);
   const [expandedQr, setExpandedQr] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +72,36 @@ export function GonkaDepositCard() {
       {loading ? (
         <p className="text-sm text-slate-500">Loading wallet...</p>
       ) : error ? (
-        <p className="text-sm text-rose-600">{error}</p>
+        <div className="space-y-3">
+          <p className="text-sm text-rose-600">{error}</p>
+          {error === "Wallet not provisioned yet." ? (
+            <Button
+              size="sm"
+              disabled={provisioning}
+              onClick={async () => {
+                setProvisioning(true);
+                try {
+                  const res = await fetch("/api/admin/provision-wallet", { method: "POST" });
+                  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+
+                  if (!res.ok) {
+                    setError(data?.error ?? "Failed to provision wallet.");
+                    return;
+                  }
+
+                  await fetchWalletBalance();
+                  router.refresh();
+                } catch {
+                  setError("Failed to provision wallet.");
+                } finally {
+                  setProvisioning(false);
+                }
+              }}
+            >
+              {provisioning ? "Provisioning..." : "Provision Wallet"}
+            </Button>
+          ) : null}
+        </div>
       ) : payload ? (
         <div className="space-y-4">
           <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
