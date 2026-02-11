@@ -8,12 +8,19 @@ export function signGonkaRequest(
   timestampNs: bigint,
   providerTransferAddress: string
 ): string {
-  // SDK signing spec: sign(payload + timestamp + providerTransferAddress)
-  const message = `${payload}${timestampNs.toString()}${providerTransferAddress}`;
-  const messageBytes = new TextEncoder().encode(message);
+  // SDK signing spec:
+  // 1) payloadHashHex = SHA256(JSON body) as hex
+  // 2) signatureInput = payloadHashHex + timestamp + providerTransferAddress
+  // 3) messageHash = SHA256(signatureInput)
+  const payloadHash = sha256(new TextEncoder().encode(payload));
+  const payloadHashHex = Buffer.from(payloadHash).toString("hex");
+  const signatureInput = `${payloadHashHex}${timestampNs.toString()}${providerTransferAddress}`;
+  const messageHash = sha256(new TextEncoder().encode(signatureInput));
 
-  const messageHash = sha256(messageBytes);
   const privateKey = fromHex(privateKeyHex);
+  if (privateKey.length !== 32) {
+    throw new Error("Invalid private key length");
+  }
 
   const { signature } = secp256k1.ecdsaSign(messageHash, privateKey);
 
