@@ -48,31 +48,8 @@ function uid(prefix: string) {
 
 const STORAGE_CONV = "gonkacloud_chat_conversations";
 const STORAGE_ACTIVE = "gonkacloud_chat_active";
-const STORAGE_APIKEY = "gonkacloud_web_api_key";
-
-async function ensureWebApiKey(): Promise<string> {
-  const cached = localStorage.getItem(STORAGE_APIKEY);
-  if (cached && cached.startsWith("sk-gc-")) return cached;
-
-  // Create a dedicated key for web chat usage.
-  const res = await fetch("/api/keys", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ name: "Web Chat" }),
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to create API key");
-  }
-
-  const payload = (await res.json()) as { key: string };
-  localStorage.setItem(STORAGE_APIKEY, payload.key);
-  return payload.key;
-}
-
 export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string }) {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [loadingKey, setLoadingKey] = useState(true);
+  const [loadingKey] = useState(false);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -118,15 +95,7 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
   }, [activeId]);
 
   useEffect(() => {
-    // Ensure API key.
-    (async () => {
-      try {
-        const key = await ensureWebApiKey();
-        setApiKey(key);
-      } finally {
-        setLoadingKey(false);
-      }
-    })();
+    // No API key is stored in the browser. Requests are authenticated via Clerk session cookies.
   }, []);
 
   useEffect(() => {
@@ -175,8 +144,6 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
     const text = input.trim();
     if (!text || sending) return;
 
-    if (!apiKey) return;
-
     setSending(true);
     setTyping(true);
 
@@ -202,11 +169,10 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
     try {
       const controller = new AbortController();
 
-      const res = await fetch("/api/v1/chat/completions", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -400,7 +366,7 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
             {!active ? (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-sm text-slate-600">
-                {loadingKey ? "Preparing your chat key..." : "Start a new chat to begin."}
+                Start a new chat to begin.
               </div>
             ) : (
               <>
