@@ -1,5 +1,5 @@
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-import { StargateClient, SigningStargateClient } from "@cosmjs/stargate";
+import { SigningStargateClient } from "@cosmjs/stargate";
 
 import { decrypt, encrypt } from "@/lib/wallet/kms";
 
@@ -69,14 +69,31 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
 }
 
 export async function getBalance(address: string): Promise<{ gonka: string; ngonka: string }> {
-  const client = await StargateClient.connect(RPC_URL);
-  const bal = await client.getBalance(address, DENOM);
-  const ngonka = bal?.amount ?? "0";
+  try {
+    const response = await fetch(`http://node2.gonka.ai:8000/cosmos/bank/v1beta1/balances/${address}`, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
 
-  return {
-    gonka: ngonkaToGonkaString(ngonka),
-    ngonka,
-  };
+    if (!response.ok) {
+      console.error("Balance fetch failed:", response.status);
+      return { gonka: "0", ngonka: "0" };
+    }
+
+    const data = (await response.json()) as { balances?: Array<{ denom?: string; amount?: string }> };
+    const balance = data.balances?.find((b) => b.denom === "ngonka");
+    const ngonka = balance?.amount || "0";
+
+    const gonkaNum = Number(ngonka) / 1_000_000_000;
+
+    return {
+      ngonka,
+      gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+    };
+  } catch (error) {
+    console.error("Balance fetch error:", error);
+    return { gonka: "0", ngonka: "0" };
+  }
 }
 
 export async function sendTokens(encryptedMnemonic: string, toAddress: string, amountNgonka: string): Promise<string> {
