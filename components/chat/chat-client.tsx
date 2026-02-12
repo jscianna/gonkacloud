@@ -45,8 +45,8 @@ function uid(prefix: string) {
   return `${prefix}_${Math.random().toString(16).slice(2)}_${Date.now()}`;
 }
 
-const STORAGE_CONV = "gonkacloud_chat_conversations";
-const STORAGE_ACTIVE = "gonkacloud_chat_active";
+const STORAGE_CONV = "dogecat_chat_conversations";
+const STORAGE_ACTIVE = "dogecat_chat_active";
 export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string }) {
   const [loadingKey] = useState(false);
 
@@ -394,7 +394,7 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
               <textarea
                 ref={textareaRef}
                 className="w-full resize-none rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
-                placeholder="Message GonkaCloud..."
+                placeholder="Message dogecat..."
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);

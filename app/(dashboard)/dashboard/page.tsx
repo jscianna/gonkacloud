@@ -48,7 +48,7 @@ export default async function DashboardPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Welcome back, {email}</h1>
-        <p className="mt-1 text-sm text-slate-600">Your GonkaCloud usage and account health at a glance.</p>
+        <p className="mt-1 text-sm text-slate-600">Your dogecat usage and account health at a glance.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

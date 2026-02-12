@@ -23,7 +23,7 @@ export default async function HomePage() {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0b0d10]/90 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
           <Link className="text-base font-semibold tracking-tight text-white" href="/">
-            GonkaCloud
+            dogecat
           </Link>
           <nav className="flex items-center gap-5 text-sm">
             <a className="text-slate-300 transition hover:text-white" href="#pricing">

@@ -1,6 +1,6 @@
-# GonkaCloud
+# dogecat
 
-Production-ready Next.js 14 app for GonkaCloud, a SaaS wrapper around Gonka.ai's decentralized GPU network.
+Production-ready Next.js 14 app for dogecat, a SaaS wrapper around Gonka.ai's decentralized GPU network.
 
 ## Stack
 

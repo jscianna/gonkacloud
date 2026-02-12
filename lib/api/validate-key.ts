@@ -54,6 +54,8 @@ export async function validateKey(req: Request) {
         balanceUsd: users.balanceUsd,
         gonkaAddress: users.gonkaAddress,
         encryptedMnemonic: users.encryptedMnemonic,
+        inferenceRegistered: users.inferenceRegistered,
+        inferenceRegisteredAt: users.inferenceRegisteredAt,
       },
     })
     .from(apiKeys)

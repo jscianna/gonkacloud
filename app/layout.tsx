@@ -4,7 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GonkaCloud",
+  title: "dogecat",
   description: "Credit-card wrapper for decentralized AI inference on Gonka.ai",
 };
 

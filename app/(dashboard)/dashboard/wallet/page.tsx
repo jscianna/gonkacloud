@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { WalletClient } from "@/components/dashboard/wallet-client";
+import { WalletStatus } from "@/components/WalletStatus";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -14,10 +15,22 @@ export default async function WalletPage() {
 
   let gonkaAddress: string | null = null;
   let balance: { gonka: string; ngonka: string } | null = null;
+  let inferenceRegistered = false;
+  let inferenceRegisteredAt: string | null = null;
 
   if (userId) {
-    const [row] = await db.select({ gonkaAddress: users.gonkaAddress }).from(users).where(eq(users.id, userId)).limit(1);
+    const [row] = await db
+      .select({
+        gonkaAddress: users.gonkaAddress,
+        inferenceRegistered: users.inferenceRegistered,
+        inferenceRegisteredAt: users.inferenceRegisteredAt,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
     gonkaAddress = row?.gonkaAddress ?? null;
+    inferenceRegistered = Boolean(row?.inferenceRegistered);
+    inferenceRegisteredAt = row?.inferenceRegisteredAt ? row.inferenceRegisteredAt.toISOString() : null;
 
     if (gonkaAddress) {
       balance = await getBalance(gonkaAddress);
@@ -28,7 +41,7 @@ export default async function WalletPage() {
     <section className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Wallet</h1>
-        <p className="mt-1 text-sm text-slate-600">Custodial Gonka wallet managed by GonkaCloud (mnemonic never shown).</p>
+        <p className="mt-1 text-sm text-slate-600">Custodial Gonka wallet managed by dogecat (mnemonic never shown).</p>
       </div>
 
       <Card>
@@ -60,8 +73,22 @@ export default async function WalletPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Inference Status</CardTitle>
+          <CardDescription>Wallet registration status required by the Gonka network.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WalletStatus
+            inferenceRegistered={inferenceRegistered}
+            inferenceRegisteredAt={inferenceRegisteredAt}
+            hasBalance={Boolean(balance && Number(balance.ngonka) > 0)}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Deposit Instructions</CardTitle>
-          <CardDescription>Send tokens to your GonkaCloud custodial address.</CardDescription>
+          <CardDescription>Send tokens to your dogecat custodial address.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-slate-700">
           <ol className="list-decimal pl-5">
@@ -69,7 +96,7 @@ export default async function WalletPage() {
             <li>Send GONKA to that address from your external wallet/exchange.</li>
             <li>Wait for confirmations, then refresh this page.</li>
           </ol>
-          <p className="text-xs text-slate-500">GonkaCloud will never show your mnemonic or private key.</p>
+          <p className="text-xs text-slate-500">dogecat will never show your mnemonic or private key.</p>
         </CardContent>
       </Card>
     </section>

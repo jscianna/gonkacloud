@@ -108,6 +108,7 @@ export async function POST(req: Request) {
         balanceUsd: users.balanceUsd,
         gonkaAddress: users.gonkaAddress,
         encryptedMnemonic: users.encryptedMnemonic,
+        inferenceRegistered: users.inferenceRegistered,
       })
       .from(users)
       .where(eq(users.clerkId, clerkId))
@@ -119,6 +120,14 @@ export async function POST(req: Request) {
 
     if (!dbUser.gonkaAddress || !dbUser.encryptedMnemonic) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
+    }
+    if (!dbUser.inferenceRegistered) {
+      throw new ApiError(
+        400,
+        "Wallet not registered for inference. Please fund your wallet first.",
+        "invalid_request_error",
+        "wallet_not_registered"
+      );
     }
     console.log("User:", dbUser?.id, "Gonka Address:", dbUser?.gonkaAddress);
 

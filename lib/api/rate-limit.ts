@@ -6,7 +6,7 @@ const redis = Redis.fromEnv();
 const ratelimit = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(60, "1 m"),
-  prefix: "gonkacloud:rl",
+  prefix: "dogecat:rl",
 });
 
 export async function rateLimit(identifier: string) {

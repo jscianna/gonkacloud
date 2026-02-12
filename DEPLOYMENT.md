@@ -1,4 +1,4 @@
-# GonkaCloud Deployment (Vercel)
+# dogecat Deployment (Vercel)
 
 ## 1) Connect GitHub to Vercel
 
@@ -11,7 +11,7 @@
 In Vercel Project Settings -> Environment Variables, add values for:
 
 - App
-  - `NEXT_PUBLIC_APP_URL` (e.g. `https://gonkacloud.vercel.app`)
+  - `NEXT_PUBLIC_APP_URL` (e.g. `https://dogecat.vercel.app`)
 
 - Clerk
   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`

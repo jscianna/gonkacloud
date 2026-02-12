@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { boolean, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -9,6 +9,8 @@ export const users = pgTable("users", {
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
   gonkaAddress: varchar("gonka_address", { length: 255 }),
   encryptedMnemonic: text("encrypted_mnemonic"),
+  inferenceRegistered: boolean("inference_registered").notNull().default(false),
+  inferenceRegisteredAt: timestamp("inference_registered_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

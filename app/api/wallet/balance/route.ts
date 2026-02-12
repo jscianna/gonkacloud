@@ -11,7 +11,12 @@ export async function GET() {
     const clerkId = await requireAuth();
 
     const [dbUser] = await db
-      .select({ id: users.id, gonkaAddress: users.gonkaAddress })
+      .select({
+        id: users.id,
+        gonkaAddress: users.gonkaAddress,
+        inferenceRegistered: users.inferenceRegistered,
+        inferenceRegisteredAt: users.inferenceRegisteredAt,
+      })
       .from(users)
       .where(eq(users.clerkId, clerkId))
       .limit(1);
@@ -25,7 +30,15 @@ export async function GET() {
     }
 
     const balance = await getBalance(dbUser.gonkaAddress);
-    return NextResponse.json({ address: dbUser.gonkaAddress, balance }, { status: 200 });
+    return NextResponse.json(
+      {
+        address: dbUser.gonkaAddress,
+        balance,
+        inferenceRegistered: dbUser.inferenceRegistered,
+        inferenceRegisteredAt: dbUser.inferenceRegisteredAt,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

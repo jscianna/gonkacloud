@@ -32,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <aside className="hidden w-64 border-r border-slate-200 bg-white px-4 py-6 md:flex md:flex-col">
           <Link className="mb-8 flex items-center gap-2 px-2" href="/dashboard">
             <div className="rounded-md bg-slate-900 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">GC</div>
-            <span className="text-base font-semibold tracking-tight">GonkaCloud</span>
+            <span className="text-base font-semibold tracking-tight">dogecat</span>
           </Link>
           <DashboardNav />
         </aside>
@@ -52,7 +52,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     <div className="border-b border-slate-200 px-6 py-5">
                       <Link className="flex items-center gap-2" href="/dashboard">
                         <div className="rounded-md bg-slate-900 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">GC</div>
-                        <span className="text-base font-semibold tracking-tight">GonkaCloud</span>
+                        <span className="text-base font-semibold tracking-tight">dogecat</span>
                       </Link>
                     </div>
                     <div className="p-4">

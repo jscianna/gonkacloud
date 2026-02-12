@@ -111,6 +111,14 @@ export async function POST(req: Request) {
     if (!gonkaAddress || !encryptedMnemonic) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
     }
+    if (!user.inferenceRegistered) {
+      throw new ApiError(
+        400,
+        "Wallet not registered for inference. Please fund your wallet first.",
+        "invalid_request_error",
+        "wallet_not_registered"
+      );
+    }
 
     // Gonka on-chain balance is required for inference today.
     const gonkaBalance = await getBalance(gonkaAddress);

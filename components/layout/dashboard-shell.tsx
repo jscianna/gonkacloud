@@ -16,7 +16,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
           <Link className="text-sm font-semibold tracking-wide text-slate-900" href="/dashboard">
-            GonkaCloud
+            dogecat
           </Link>
           <UserButton afterSignOutUrl="/" />
         </div>

@@ -69,7 +69,7 @@ export async function POST(req: Request) {
             currency: "usd",
             unit_amount: amountCents,
             product_data: {
-              name: "GonkaCloud Credits",
+              name: "dogecat Credits",
               description: "Prepaid credits for AI inference",
             },
           },
