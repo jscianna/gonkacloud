@@ -24,7 +24,7 @@ export default async function HomePage() {
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0b0d10]/90 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
           <Link className="flex items-center gap-2 text-base font-semibold tracking-tight text-white" href="/">
-            <Image alt="dogecat logo" className="rounded-sm bg-white/90 p-0.5" height={24} src="/logo.png" width={24} />
+            <Image alt="dogecat logo" className="rounded-sm bg-white/90 p-0.5" height={24} src="/logo.svg" width={24} />
             <span>dogecat</span>
           </Link>
           <nav className="flex items-center gap-5 text-sm">

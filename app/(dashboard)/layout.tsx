@@ -32,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="mx-auto flex min-h-screen max-w-7xl">
         <aside className="hidden w-64 border-r border-slate-200 bg-white px-4 py-6 md:flex md:flex-col">
           <Link className="mb-8 flex items-center gap-2 px-2" href="/dashboard">
-            <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.png" width={24} />
+            <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.svg" width={24} />
             <span className="text-base font-semibold tracking-tight">dogecat</span>
           </Link>
           <DashboardNav />
@@ -52,7 +52,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   <SheetContent side="left" className="w-72 p-0">
                     <div className="border-b border-slate-200 px-6 py-5">
                       <Link className="flex items-center gap-2" href="/dashboard">
-                        <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.png" width={24} />
+                        <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.svg" width={24} />
                         <span className="text-base font-semibold tracking-tight">dogecat</span>
                       </Link>
                     </div>
