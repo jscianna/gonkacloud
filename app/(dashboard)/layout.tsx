@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { UserButton } from "@clerk/nextjs";
 import { Menu, Wallet } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -31,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="mx-auto flex min-h-screen max-w-7xl">
         <aside className="hidden w-64 border-r border-slate-200 bg-white px-4 py-6 md:flex md:flex-col">
           <Link className="mb-8 flex items-center gap-2 px-2" href="/dashboard">
-            <div className="rounded-md bg-slate-900 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">GC</div>
+            <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.png" width={24} />
             <span className="text-base font-semibold tracking-tight">dogecat</span>
           </Link>
           <DashboardNav />
@@ -51,7 +52,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   <SheetContent side="left" className="w-72 p-0">
                     <div className="border-b border-slate-200 px-6 py-5">
                       <Link className="flex items-center gap-2" href="/dashboard">
-                        <div className="rounded-md bg-slate-900 px-2 py-1 text-xs font-bold uppercase tracking-[0.2em] text-white">GC</div>
+                        <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.png" width={24} />
                         <span className="text-base font-semibold tracking-tight">dogecat</span>
                       </Link>
                     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
@@ -22,8 +23,9 @@ export default async function HomePage() {
     <main className="min-h-screen bg-[#0b0d10] text-slate-100">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-[#0b0d10]/90 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-          <Link className="text-base font-semibold tracking-tight text-white" href="/">
-            dogecat
+          <Link className="flex items-center gap-2 text-base font-semibold tracking-tight text-white" href="/">
+            <Image alt="dogecat logo" className="rounded-sm bg-white/90 p-0.5" height={24} src="/logo.png" width={24} />
+            <span>dogecat</span>
           </Link>
           <nav className="flex items-center gap-5 text-sm">
             <a className="text-slate-300 transition hover:text-white" href="#pricing">

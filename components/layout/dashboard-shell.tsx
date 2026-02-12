@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { UserButton } from "@clerk/nextjs";
 
@@ -15,8 +16,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-          <Link className="text-sm font-semibold tracking-wide text-slate-900" href="/dashboard">
-            dogecat
+          <Link className="flex items-center gap-2 text-sm font-semibold tracking-wide text-slate-900" href="/dashboard">
+            <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={20} src="/logo.png" width={20} />
+            <span>dogecat</span>
           </Link>
           <UserButton afterSignOutUrl="/" />
         </div>
