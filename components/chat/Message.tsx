@@ -7,8 +7,6 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-
 type MessageProps = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -28,10 +26,8 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
     <div className="my-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
         <span className="text-xs font-medium text-white/60">{lang}</span>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+        <button
+          className="flex h-7 items-center rounded px-2 text-xs text-white/60 hover:bg-white/10 hover:text-white"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(code);
@@ -44,7 +40,7 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
         >
           {copied ? <Check className="mr-1.5 h-3 w-3" /> : <Copy className="mr-1.5 h-3 w-3" />}
           {copied ? "Copied" : "Copy"}
-        </Button>
+        </button>
       </div>
 
       <SyntaxHighlighter
