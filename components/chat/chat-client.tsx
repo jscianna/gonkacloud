@@ -186,7 +186,30 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
       });
 
       if (!res.ok || !res.body) {
+        // Try to extract error message
+        let errorMessage = "Something went wrong. Please try again.";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
+        } catch {
+          // ignore parse errors
+        }
+        
+        // Update the assistant message with the error
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== currentActiveId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) => 
+                m.id === assistantMsg.id ? { ...m, content: `⚠️ ${errorMessage}` } : m
+              ),
+              updatedAt: Date.now(),
+            };
+          })
+        );
         setTyping(false);
+        setSending(false);
         return;
       }
 

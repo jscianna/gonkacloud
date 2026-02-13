@@ -238,6 +238,15 @@ export async function POST(req: Request) {
       if (reservedUsd) {
         await adjustBalance(dbUser.id, reserveUsd);
       }
+      
+      // Handle rate limiting specifically
+      if (upstreamRes.status === 429) {
+        return NextResponse.json(
+          { error: { message: "The network is busy. Please try again in a few minutes.", type: "rate_limit_error", code: "upstream_rate_limited" } },
+          { status: 429 }
+        );
+      }
+      
       throw new ApiError(
         502,
         `Upstream error${text ? `: ${text.slice(0, 500)}` : ""}`,
