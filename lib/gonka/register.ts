@@ -28,6 +28,12 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   let lastError = "Gonka registration failed";
   let registered = false;
 
+  console.log("=== REGISTRATION DEBUG ===");
+  console.log("Address:", address);
+  console.log("Pubkey (base64):", pubkeyBase64);
+  console.log("Pubkey decoded length:", Buffer.from(pubkeyBase64, "base64").length, "bytes");
+  console.log("Request body:", JSON.stringify({ pub_key: pubkeyBase64, address }));
+
   for (const endpoint of registrationEndpoints) {
     try {
       const response = await fetch(endpoint, {
@@ -36,8 +42,9 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
         body: JSON.stringify({ pub_key: pubkeyBase64, address }),
       });
 
-      const text = await response.text().catch(() => "");
-      console.log("Registration response:", response.status, text);
+      const responseText = await response.text().catch(() => "");
+      console.log("Registration full response:", response.status, responseText);
+      const text = responseText;
       const lowered = text.toLowerCase();
 
       if (response.ok || lowered.includes("already")) {
