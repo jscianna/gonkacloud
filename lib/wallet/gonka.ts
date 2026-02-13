@@ -1,6 +1,7 @@
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { SigningStargateClient } from "@cosmjs/stargate";
 
+import { registerGonkaWallet } from "@/lib/gonka/register";
 import { decrypt, encrypt } from "@/lib/wallet/kms";
 
 export const CHAIN_ID = process.env.GONKA_CHAIN_ID || "gonka-mainnet";
@@ -45,7 +46,7 @@ function ngonkaToGonkaString(ngonka: string) {
   return fracStr.length ? `${whole.toString()}.${fracStr}` : whole.toString();
 }
 
-export async function generateWallet(): Promise<{ address: string; encryptedMnemonic: string }> {
+export async function generateWallet(): Promise<{ address: string; encryptedMnemonic: string; encryptedPrivateKey: string }> {
   // 24-word mnemonic
   const wallet = await DirectSecp256k1HdWallet.generate(24, { prefix: ADDRESS_PREFIX });
 
@@ -58,11 +59,18 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
       throw new Error("Failed to generate account");
     }
 
+    const registration = await registerGonkaWallet(mnemonic);
+    if (registration.address !== account.address) {
+      throw new Error("Registered wallet address mismatch");
+    }
+
     const encryptedMnemonic = await encrypt(mnemonic);
+    const encryptedPrivateKey = await encrypt(registration.privateKey);
 
     return {
       address: account.address,
       encryptedMnemonic,
+      encryptedPrivateKey,
     };
   } finally {
     // Best-effort cleanup (string is immutable, but we still drop the reference).

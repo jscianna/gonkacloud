@@ -7,6 +7,7 @@ import { ApiAuthError, validateKey } from "@/lib/api/validate-key";
 import { db } from "@/lib/db";
 import { apiKeys, transactions, usageLogs, users } from "@/lib/db/schema";
 import { gonkaInference } from "@/lib/gonka/inference";
+import { registerEncryptedMnemonicWallet } from "@/lib/gonka/register";
 import { getBalance } from "@/lib/wallet/gonka";
 
 class ApiError extends Error {
@@ -112,12 +113,26 @@ export async function POST(req: Request) {
       throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
     }
     if (!user.inferenceRegistered) {
-      throw new ApiError(
-        400,
-        "Wallet not registered for inference. Please fund your wallet first.",
-        "invalid_request_error",
-        "wallet_not_registered"
-      );
+      try {
+        await registerEncryptedMnemonicWallet({
+          encryptedMnemonic,
+          expectedAddress: gonkaAddress,
+        });
+        await db
+          .update(users)
+          .set({
+            inferenceRegistered: true,
+            inferenceRegisteredAt: new Date(),
+          })
+          .where(eq(users.id, user.id));
+      } catch {
+        throw new ApiError(
+          400,
+          "Wallet not registered for inference. Please fund your wallet first.",
+          "invalid_request_error",
+          "wallet_not_registered"
+        );
+      }
     }
 
     // Gonka on-chain balance is required for inference today.
@@ -143,7 +158,7 @@ export async function POST(req: Request) {
       reservedUsd = true;
     }
 
-    const upstreamRes = await gonkaInference({
+    let upstreamRes = await gonkaInference({
       encryptedMnemonic,
       gonkaAddress,
       model,
@@ -152,6 +167,34 @@ export async function POST(req: Request) {
       temperature,
       max_tokens: maxTokens,
     });
+
+    if (upstreamRes.status === 500) {
+      try {
+        await registerEncryptedMnemonicWallet({
+          encryptedMnemonic,
+          expectedAddress: gonkaAddress,
+        });
+        await db
+          .update(users)
+          .set({
+            inferenceRegistered: true,
+            inferenceRegisteredAt: new Date(),
+          })
+          .where(eq(users.id, user.id));
+
+        upstreamRes = await gonkaInference({
+          encryptedMnemonic,
+          gonkaAddress,
+          model,
+          messages,
+          stream,
+          temperature,
+          max_tokens: maxTokens,
+        });
+      } catch {
+        // fallback to original upstream error handling below
+      }
+    }
 
     if (!upstreamRes.ok || !upstreamRes.body) {
       const text = await upstreamRes.text().catch(() => "");

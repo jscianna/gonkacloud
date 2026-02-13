@@ -24,7 +24,10 @@ export async function POST() {
       const wallet = await generateWallet();
       await db.update(users).set({
         gonkaAddress: wallet.address,
+        encryptedPrivateKey: wallet.encryptedPrivateKey,
         encryptedMnemonic: wallet.encryptedMnemonic,
+        inferenceRegistered: true,
+        inferenceRegisteredAt: new Date(),
       }).where(eq(users.clerkId, userId));
       return NextResponse.json({ address: wallet.address, provisioned: true });
     }
@@ -41,7 +44,10 @@ export async function POST() {
       await db.update(users).set({
         clerkId: userId,
         gonkaAddress: wallet.address,
+        encryptedPrivateKey: wallet.encryptedPrivateKey,
         encryptedMnemonic: wallet.encryptedMnemonic,
+        inferenceRegistered: true,
+        inferenceRegisteredAt: new Date(),
       }).where(eq(users.email, email));
       return NextResponse.json({ address: wallet.address, updated: true });
     }
@@ -54,7 +60,10 @@ export async function POST() {
       email,
       balanceUsd: '0.00',
       gonkaAddress: wallet.address,
+      encryptedPrivateKey: wallet.encryptedPrivateKey,
       encryptedMnemonic: wallet.encryptedMnemonic,
+      inferenceRegistered: true,
+      inferenceRegisteredAt: new Date(),
     });
     
     return NextResponse.json({ address: wallet.address, created: true });
