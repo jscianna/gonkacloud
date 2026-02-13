@@ -11,7 +11,7 @@ const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 const CLOCK_SKEW_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY_MS = 1000; // 1 second, doubles each retry
+const INITIAL_RETRY_DELAY_MS = 5000; // 5 seconds, doubles each retry (5s, 10s, 20s)
 
 // Clock skew cache
 let cachedClockSkewMs: number | null = null;

@@ -171,12 +171,34 @@ export async function POST(req: Request) {
       reservedUsd = true;
     }
 
+    // Sanitize messages: remove empty assistant messages and consecutive duplicates
+    const sanitizedMessages = messages.filter((msg: any, index: number, arr: any[]) => {
+      // Remove messages with empty content
+      if (!msg.content || (typeof msg.content === 'string' && msg.content.trim() === '')) {
+        return false;
+      }
+      // Remove consecutive duplicate user messages
+      if (index > 0 && msg.role === 'user' && arr[index - 1]?.role === 'user') {
+        const prevContent = typeof arr[index - 1].content === 'string' ? arr[index - 1].content.trim() : '';
+        const currContent = typeof msg.content === 'string' ? msg.content.trim() : '';
+        if (prevContent === currContent) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (sanitizedMessages.length === 0) {
+      throw new ApiError(400, "No valid messages provided", "invalid_request_error", "empty_messages");
+    }
+
     console.log("Calling Gonka inference...");
+    console.log("Sanitized messages count:", sanitizedMessages.length);
     let upstreamRes = await gonkaInference({
       encryptedMnemonic: dbUser.encryptedMnemonic,
       gonkaAddress: dbUser.gonkaAddress,
       model,
-      messages,
+      messages: sanitizedMessages,
       stream,
       temperature,
       max_tokens: maxTokens,
@@ -200,7 +222,7 @@ export async function POST(req: Request) {
           encryptedMnemonic: dbUser.encryptedMnemonic,
           gonkaAddress: dbUser.gonkaAddress,
           model,
-          messages,
+          messages: sanitizedMessages,
           stream,
           temperature,
           max_tokens: maxTokens,
