@@ -6,6 +6,39 @@ import { decrypt } from "@/lib/wallet/kms";
 
 const GONKA_NODE_URL = process.env.GONKA_NODE_URL || "http://node1.gonka.ai:8000";
 
+function deriveAddressFromCompressedPubkey(pubkey: Uint8Array) {
+  const pubkeyHash = sha256(pubkey);
+  const ripemdHash = ripemd160(pubkeyHash);
+  return toBech32("gonka", ripemdHash);
+}
+
+async function verifyParticipantRegistration(params: {
+  baseUrl: string;
+  address: string;
+  expectedPubkey: string;
+}) {
+  const verifyUrl = `${params.baseUrl}/v1/participants/${params.address}`;
+  const verifyRes = await fetch(verifyUrl, {
+    method: "GET",
+    headers: { accept: "application/json" },
+    cache: "no-store",
+  });
+
+  const verifyText = await verifyRes.text().catch(() => "");
+  console.log("Registration verify response:", verifyRes.status, verifyText);
+
+  if (!verifyRes.ok) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(verifyText) as { pubkey?: string };
+    return parsed.pubkey === params.expectedPubkey;
+  } catch {
+    return false;
+  }
+}
+
 export async function registerGonkaWallet(mnemonic: string): Promise<{
   address: string;
   pubkey: string;
@@ -16,14 +49,12 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
   const pubkey = secp256k1.publicKeyCreate(privkey, true);
 
-  const pubkeyHash = sha256(pubkey);
-  const ripemdHash = ripemd160(pubkeyHash);
-  const address = toBech32("gonka", ripemdHash);
+  const address = deriveAddressFromCompressedPubkey(pubkey);
   const pubkeyBase64 = Buffer.from(pubkey).toString("base64");
   const privateKeyHex = toHex(privkey);
 
   const base = GONKA_NODE_URL.replace(/\/$/, "");
-  const registrationEndpoints = [`${base}/api/v1/participants`, `${base}/v1/participants`];
+  const registrationEndpoints = [`${base}/v1/participants`, `${base}/api/v1/participants`];
 
   let lastError = "Gonka registration failed";
   let registered = false;
@@ -48,8 +79,19 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
       const lowered = text.toLowerCase();
 
       if (response.ok || lowered.includes("already")) {
-        registered = true;
-        break;
+        const verified = await verifyParticipantRegistration({
+          baseUrl: base,
+          address,
+          expectedPubkey: pubkeyBase64,
+        });
+
+        if (verified) {
+          registered = true;
+          break;
+        }
+
+        lastError = `Registration did not persist for ${address} on ${endpoint}`;
+        continue;
       }
 
       lastError = `Gonka registration failed (${response.status}): ${text || response.statusText}`;
@@ -81,11 +123,17 @@ export async function registerEncryptedMnemonicWallet(params: {
   let mnemonic: string | null = null;
   try {
     mnemonic = await decrypt(params.encryptedMnemonic);
-    const registration = await registerGonkaWallet(mnemonic);
+    const hdPath = stringToPath("m/44'/118'/0'/0/0");
+    const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
+    const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
+    const pubkey = secp256k1.publicKeyCreate(privkey, true);
+    const derivedAddress = deriveAddressFromCompressedPubkey(pubkey);
 
-    if (params.expectedAddress && registration.address !== params.expectedAddress) {
+    if (params.expectedAddress && derivedAddress !== params.expectedAddress) {
       throw new Error("Derived address does not match wallet address");
     }
+
+    const registration = await registerGonkaWallet(mnemonic);
 
     return registration;
   } finally {
