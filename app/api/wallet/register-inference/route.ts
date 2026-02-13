@@ -69,6 +69,11 @@ export async function POST() {
     const publicKeyCompressed = secp256k1.publicKeyCreate(privateKeyBuffer, true);
     const pubKeyBase64 = Buffer.from(publicKeyCompressed).toString("base64");
 
+    console.log("=== REGISTRATION DEBUG ===");
+    console.log("Address:", dbUser.gonkaAddress);
+    console.log("PubKey Base64:", pubKeyBase64);
+    console.log("PubKey length (should be 44 chars for 33-byte key):", pubKeyBase64.length);
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     const response = await fetch(`${NODE_URL.replace(/\/$/, "")}/v1/participants`, {
@@ -81,10 +86,13 @@ export async function POST() {
       signal: controller.signal,
     }).finally(() => clearTimeout(timeout));
 
+    console.log("Gonka response status:", response.status);
+    const responseText = await response.text();
+    console.log("Gonka response body:", responseText);
+
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
       return NextResponse.json(
-        { error: `Registration failed: ${errorText || response.statusText}` },
+        { error: `Registration failed: ${responseText || response.statusText}` },
         { status: 500 }
       );
     }

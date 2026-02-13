@@ -6,6 +6,7 @@ import { getGonkaBalance } from "@/lib/gonka/balance";
 import { createGonkaClient, DEFAULT_GONKA_MODEL } from "@/lib/gonka/client";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { registerEncryptedMnemonicWallet } from "@/lib/gonka/register";
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,7 +42,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (!user.inferenceRegistered) {
-      return NextResponse.json({ error: "Wallet not registered for inference" }, { status: 400 });
+      try {
+        await registerEncryptedMnemonicWallet({
+          encryptedMnemonic: user.encryptedMnemonic,
+          expectedAddress: user.gonkaAddress,
+        });
+        await db
+          .update(users)
+          .set({
+            inferenceRegistered: true,
+            inferenceRegisteredAt: new Date(),
+          })
+          .where(eq(users.clerkId, userId));
+      } catch {
+        return NextResponse.json({ error: "Wallet not registered for inference" }, { status: 400 });
+      }
     }
 
     const gnkBalance = await getGonkaBalance(user.gonkaAddress);

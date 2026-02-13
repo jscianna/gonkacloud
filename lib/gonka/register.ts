@@ -1,5 +1,6 @@
-import { Bip39, EnglishMnemonic, Secp256k1, Slip10, Slip10Curve, ripemd160, sha256, stringToPath } from "@cosmjs/crypto";
+import { Bip39, EnglishMnemonic, Slip10, Slip10Curve, ripemd160, sha256, stringToPath } from "@cosmjs/crypto";
 import { toBech32, toHex } from "@cosmjs/encoding";
+import * as secp256k1 from "secp256k1";
 
 import { decrypt } from "@/lib/wallet/kms";
 
@@ -13,7 +14,7 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   const hdPath = stringToPath("m/44'/118'/0'/0/0");
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
-  const { pubkey } = await Secp256k1.makeKeypair(privkey);
+  const pubkey = secp256k1.publicKeyCreate(privkey, true);
 
   const pubkeyHash = sha256(pubkey);
   const ripemdHash = ripemd160(pubkeyHash);
@@ -21,18 +22,32 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   const pubkeyBase64 = Buffer.from(pubkey).toString("base64");
   const privateKeyHex = toHex(privkey);
 
-  const response = await fetch(`${GONKA_NODE_URL.replace(/\/$/, "")}/v1/participants`, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "application/json" },
-    body: JSON.stringify({ pub_key: pubkeyBase64, address }),
-  });
+  const base = GONKA_NODE_URL.replace(/\/$/, "");
+  const registrationEndpoints = [`${base}/api/v1/participants`, `${base}/v1/participants`];
 
-  if (!response.ok) {
+  let lastError = "Gonka registration failed";
+  let registered = false;
+
+  for (const endpoint of registrationEndpoints) {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ pub_key: pubkeyBase64, address }),
+    });
+
     const text = await response.text().catch(() => "");
     const lowered = text.toLowerCase();
-    if (!lowered.includes("already")) {
-      throw new Error(`Gonka registration failed (${response.status}): ${text || response.statusText}`);
+
+    if (response.ok || lowered.includes("already")) {
+      registered = true;
+      break;
     }
+
+    lastError = `Gonka registration failed (${response.status}): ${text || response.statusText}`;
+  }
+
+  if (!registered) {
+    throw new Error(lastError);
   }
 
   return {
