@@ -108,7 +108,7 @@ export async function getBalance(address: string): Promise<{ gonka: string; ngon
   try {
     const response = await fetch(`${GONKA_API_URL}/search?query=${address}`, {
       headers: {
-        Authorization: `Bearer ${GONKA_API_KEY}`,
+        "X-API-Key": GONKA_API_KEY || "",
         Accept: "application/json",
       },
       cache: "no-store",
