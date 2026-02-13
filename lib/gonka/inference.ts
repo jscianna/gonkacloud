@@ -5,9 +5,58 @@ import { toHex } from "@cosmjs/encoding";
 import { decrypt } from "@/lib/wallet/kms";
 import { signGonkaRequest } from "@/lib/gonka/sign";
 
-const PARTICIPANT_BOOTSTRAP_NODES = ["http://node2.gonka.ai:8000", "http://node1.gonka.ai:8000"];
+const PARTICIPANT_BOOTSTRAP_NODES = ["http://node1.gonka.ai:8000", "http://node2.gonka.ai:8000"];
+const RPC_URL = "http://node1.gonka.ai:8000/chain-rpc/";
 const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
+const CLOCK_SKEW_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+// Clock skew cache
+let cachedClockSkewMs: number | null = null;
+let clockSkewCachedAt = 0;
+
+/**
+ * Get clock skew between local time and Gonka chain.
+ * Gonka nodes can be ~30+ minutes behind real time.
+ * Returns milliseconds to SUBTRACT from local Date.now().
+ */
+async function getClockSkew(): Promise<number> {
+  const now = Date.now();
+  if (cachedClockSkewMs !== null && now - clockSkewCachedAt < CLOCK_SKEW_CACHE_TTL_MS) {
+    return cachedClockSkewMs;
+  }
+
+  try {
+    const localBefore = Date.now();
+    const resp = await fetch(RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "status" }),
+      signal: AbortSignal.timeout(5000),
+    });
+    const localAfter = Date.now();
+    const data = await resp.json();
+
+    const blockTimeStr = data?.result?.sync_info?.latest_block_time;
+    if (!blockTimeStr) {
+      console.warn("No block time in RPC response, using 0 skew");
+      return 0;
+    }
+
+    const nodeTime = new Date(blockTimeStr).getTime();
+    const localTime = (localBefore + localAfter) / 2; // Account for RTT
+
+    // Positive skew = local is ahead of node
+    cachedClockSkewMs = localTime - nodeTime;
+    clockSkewCachedAt = Date.now();
+
+    console.log(`Clock skew: ${(cachedClockSkewMs / 1000).toFixed(1)}s (local ahead of chain)`);
+    return cachedClockSkewMs;
+  } catch (e) {
+    console.error("Failed to get clock skew:", e instanceof Error ? e.message : String(e));
+    return cachedClockSkewMs ?? 0;
+  }
+}
 const ALLOWED_TRANSFER_AGENTS = [
   "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
   "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
@@ -44,60 +93,73 @@ function getProviderWeight(provider: any): number {
 }
 
 async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
-  const participantsUrl = `${nodeUrl}/v1/epochs/current/participants`;
-  console.log("Fetching participants from:", participantsUrl);
+  // Try epochs API first, fallback to main participants API
+  const endpointsToTry = [
+    `${nodeUrl}/v1/epochs/current/participants`,
+    `${nodeUrl}/api/v1/participants`,
+  ];
 
-  const participantsController = new AbortController();
-  const participantsTimeout = setTimeout(() => participantsController.abort(), PROVIDER_FETCH_TIMEOUT_MS);
+  let lastError: Error | null = null;
 
-  const participantsRes = await fetch(participantsUrl, { signal: participantsController.signal }).finally(() =>
-    clearTimeout(participantsTimeout)
-  );
+  for (const participantsUrl of endpointsToTry) {
+    try {
+      console.log("Fetching participants from:", participantsUrl);
 
-  if (!participantsRes.ok) {
-    throw new Error(`Failed to fetch participants: ${participantsRes.status}`);
-  }
+      const participantsRes = await fetch(participantsUrl, {
+        signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS),
+      });
 
-  const data = (await participantsRes.json()) as any;
-  console.log("Participants response keys:", Object.keys(data ?? {}));
-  console.log("First participant (sample):", JSON.stringify(data).substring(0, 500));
-
-  const list =
-    data?.active_participants?.participants ||
-    data?.participants ||
-    data?.data?.active_participants?.participants ||
-    data?.data?.participants ||
-    [];
-
-  if (Array.isArray(list)) {
-    const eligible = list.filter((p: any) => {
-      const index = String(p?.index || "");
-      const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
-      return ALLOWED_TRANSFER_AGENTS.includes(index) && Boolean(inferenceUrl);
-    });
-
-    if (eligible.length > 0) {
-      const ranked = eligible.sort((a: any, b: any) => getProviderWeight(b) - getProviderWeight(a));
-      const provider = ranked[0];
-      const providerTransferAddress = String(provider.index || "");
-      const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
-
-      console.log(
-        "Provider candidate count:",
-        eligible.length,
-        "selected weight:",
-        getProviderWeight(provider)
-      );
-
-      if (providerTransferAddress && inferenceUrl) {
-        console.log("Selected provider:", providerTransferAddress);
-        console.log("Selected provider inference_url:", inferenceUrl);
-        return { providerTransferAddress, inferenceUrl };
+      if (!participantsRes.ok) {
+        console.warn(`Participants API returned ${participantsRes.status}`);
+        continue;
       }
+
+      const data = (await participantsRes.json()) as any;
+      console.log("Participants response keys:", Object.keys(data ?? {}));
+
+      // Handle different response formats
+      const list =
+        data?.active_participants?.participants ||
+        data?.participants ||
+        data?.data?.active_participants?.participants ||
+        data?.data?.participants ||
+        [];
+
+      if (Array.isArray(list)) {
+        const eligible = list.filter((p: any) => {
+          // Support both "index" and "id" field names
+          const address = String(p?.index || p?.id || "");
+          const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
+          return ALLOWED_TRANSFER_AGENTS.includes(address) && Boolean(inferenceUrl);
+        });
+
+        if (eligible.length > 0) {
+          const ranked = eligible.sort((a: any, b: any) => getProviderWeight(b) - getProviderWeight(a));
+          const provider = ranked[0];
+          const providerTransferAddress = String(provider.index || provider.id || "");
+          const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
+
+          console.log(
+            "Provider candidate count:",
+            eligible.length,
+            "selected weight:",
+            getProviderWeight(provider)
+          );
+
+          if (providerTransferAddress && inferenceUrl) {
+            console.log("Selected provider:", providerTransferAddress);
+            console.log("Selected provider inference_url:", inferenceUrl);
+            return { providerTransferAddress, inferenceUrl };
+          }
+        }
+      }
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+      console.warn("Participants fetch failed:", participantsUrl, lastError.message);
     }
   }
 
-  throw new Error("Could not find provider address + inference_url in participants");
+  throw lastError || new Error("Could not find provider address + inference_url in participants");
 }
 
 async function getProviderWithFallback(): Promise<SelectedProvider> {
@@ -173,7 +235,13 @@ export async function gonkaInference(params: {
 
     const payloadJson = JSON.stringify(payload);
 
-    const timestampNs = BigInt(Date.now()) * 1_000_000n;
+    // Get clock skew and adjust timestamp
+    // Gonka nodes can be 30+ minutes behind real time
+    console.log("Step: get clock skew");
+    const clockSkewMs = await getClockSkew();
+    const adjustedTimeMs = Math.floor(Date.now() - clockSkewMs);
+    const timestampNs = BigInt(adjustedTimeMs) * 1_000_000n;
+    console.log("Adjusted timestamp (ms):", adjustedTimeMs, "Skew:", clockSkewMs);
 
     const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
 
