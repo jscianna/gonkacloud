@@ -21,28 +21,28 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
   const [copied, setCopied] = useState(false);
 
   if (inline) {
-    return <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.9em]">{children}</code>;
+    return <code className="rounded bg-slate-200/50 px-1.5 py-0.5 font-mono text-[0.85em]">{children}</code>;
   }
 
   return (
-    <div className="my-3 overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
-      <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
-        <span className="text-xs font-medium text-white/70">{lang}</span>
+    <div className="my-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+        <span className="text-xs font-medium text-white/60">{lang}</span>
         <Button
           size="sm"
-          variant="secondary"
-          className="h-8 bg-white/10 text-white hover:bg-white/15"
+          variant="ghost"
+          className="h-7 text-xs text-white/60 hover:bg-white/10 hover:text-white"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(code);
               setCopied(true);
-              setTimeout(() => setCopied(false), 1200);
+              setTimeout(() => setCopied(false), 1500);
             } catch {
               // ignore
             }
           }}
         >
-          {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+          {copied ? <Check className="mr-1.5 h-3 w-3" /> : <Copy className="mr-1.5 h-3 w-3" />}
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
@@ -53,8 +53,8 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
         customStyle={{
           margin: 0,
           background: "transparent",
-          padding: "12px 14px",
-          fontSize: "0.85rem",
+          padding: "16px",
+          fontSize: "0.8rem",
         }}
       >
         {code}
@@ -66,45 +66,52 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
 export function Message({ role, content }: MessageProps) {
   const isUser = role === "user";
 
+  if (!content) return null;
+
   return (
     <div className={isUser ? "flex justify-end" : "flex justify-start"}>
       <div
         className={
           isUser
-            ? "max-w-[85%] rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white sm:max-w-[70%]"
-            : "max-w-[85%] rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-900 sm:max-w-[70%]"
+            ? "max-w-[85%] rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white sm:max-w-[75%]"
+            : "max-w-[85%] text-sm text-slate-900 sm:max-w-[75%]"
         }
       >
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            code: ({ className, children, ...props }) => (
-              <code {...props} className={`rounded bg-slate-100 px-1 py-0.5 font-mono text-[0.9em] ${className ?? ""}`}>
-                {children}
-              </code>
-            ),
-            pre: ({ children }) => {
-              // Fenced code blocks come through as <pre><code className="language-...">...</code></pre>
-              const child = Array.isArray(children) ? children[0] : children;
-              if (!child || typeof child !== "object") {
-                return <pre>{children}</pre>;
-              }
+        <div className={isUser ? "prose prose-sm prose-invert max-w-none" : "prose prose-sm max-w-none prose-slate"}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code: ({ className, children, ...props }) => (
+                <code {...props} className={`rounded bg-slate-200/50 px-1.5 py-0.5 font-mono text-[0.85em] ${className ?? ""}`}>
+                  {children}
+                </code>
+              ),
+              pre: ({ children }) => {
+                const child = Array.isArray(children) ? children[0] : children;
+                if (!child || typeof child !== "object") {
+                  return <pre>{children}</pre>;
+                }
 
-              const codeChild = child as any;
-              const className = codeChild.props?.className as string | undefined;
-              const code = codeChild.props?.children;
+                const codeChild = child as any;
+                const className = codeChild.props?.className as string | undefined;
+                const code = codeChild.props?.children;
 
-              return <CodeBlock className={className}>{code}</CodeBlock>;
-            },
-            a: ({ href, children }) => (
-              <a className="underline underline-offset-2" href={href} rel="noreferrer" target="_blank">
-                {children}
-              </a>
-            ),
-          }}
-        >
-          {content}
-        </ReactMarkdown>
+                return <CodeBlock className={className}>{code}</CodeBlock>;
+              },
+              a: ({ href, children }) => (
+                <a className="text-blue-600 hover:underline" href={href} rel="noreferrer" target="_blank">
+                  {children}
+                </a>
+              ),
+              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+              ul: ({ children }) => <ul className="mb-3 list-disc pl-4 last:mb-0">{children}</ul>,
+              ol: ({ children }) => <ol className="mb-3 list-decimal pl-4 last:mb-0">{children}</ol>,
+              li: ({ children }) => <li className="mb-1">{children}</li>,
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </div>
       </div>
     </div>
   );
