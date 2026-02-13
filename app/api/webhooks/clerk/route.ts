@@ -4,7 +4,7 @@ import { Webhook } from "svix";
 
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { generateWallet } from "@/lib/wallet/gonka";
+import { createGonkaWallet } from "@/lib/gonka/wallet";
 
 type ClerkUserCreatedPayload = {
   id: string;
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
     try {
       console.log("Generating wallet...");
-      const wallet = await generateWallet();
+      const wallet = await createGonkaWallet(clerkId);
       console.log("Wallet generated:", wallet.address);
 
       await db

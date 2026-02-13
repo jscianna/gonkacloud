@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { PRICING } from "@/lib/api/pricing";
 import { ApiAuthError, validateKey } from "@/lib/api/validate-key";
+import { GONKA_MODELS } from "@/lib/gonka/client";
 
 export async function GET(req: Request) {
   try {
     await validateKey(req);
 
-    const data = Object.keys(PRICING).map((id) => ({
+    const data = GONKA_MODELS.map((id) => ({
       id,
       object: "model",
       created: 0,

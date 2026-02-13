@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { UnauthorizedError, requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { formatGonkaBalance, getGonkaBalance } from "@/lib/gonka/balance";
 import { getBalance } from "@/lib/wallet/gonka";
 
 export async function GET() {
@@ -30,10 +31,13 @@ export async function GET() {
     }
 
     const balance = await getBalance(dbUser.gonkaAddress);
+    const gnkRaw = await getGonkaBalance(dbUser.gonkaAddress);
     return NextResponse.json(
       {
         address: dbUser.gonkaAddress,
         balance,
+        gnkBalanceRaw: gnkRaw,
+        gnkBalanceFormatted: formatGonkaBalance(gnkRaw),
         inferenceRegistered: dbUser.inferenceRegistered,
         inferenceRegisteredAt: dbUser.inferenceRegisteredAt,
       },
