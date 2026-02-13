@@ -44,7 +44,7 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   pubkey: string;
   privateKey: string;
 }> {
-  const hdPath = stringToPath("m/44'/118'/0'/0/0");
+  const hdPath = stringToPath("m/44'/1200'/0'/0/0");
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
   const pubkey = secp256k1.publicKeyCreate(privkey, true);
@@ -123,7 +123,7 @@ export async function registerEncryptedMnemonicWallet(params: {
   let mnemonic: string | null = null;
   try {
     mnemonic = await decrypt(params.encryptedMnemonic);
-    const hdPath = stringToPath("m/44'/118'/0'/0/0");
+    const hdPath = stringToPath("m/44'/1200'/0'/0/0");
     const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
     const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
     const pubkey = secp256k1.publicKeyCreate(privkey, true);

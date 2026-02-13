@@ -14,7 +14,7 @@ let endpointsCacheAt = 0;
 const ENDPOINT_CACHE_TTL_MS = 60_000;
 
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
-  const hdPath = stringToPath("m/44'/118'/0'/0/0");
+  const hdPath = stringToPath("m/44'/1200'/0'/0/0");
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
   return toHex(privkey);

@@ -122,7 +122,7 @@ async function getProviderWithFallback(): Promise<SelectedProvider> {
 
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
   // Cosmos standard HD path
-  const hdPath = stringToPath("m/44'/118'/0'/0/0");
+  const hdPath = stringToPath("m/44'/1200'/0'/0/0");
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
   return toHex(privkey);
