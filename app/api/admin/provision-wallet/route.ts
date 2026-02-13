@@ -20,14 +20,13 @@ export async function POST() {
       if (user.gonkaAddress) {
         return NextResponse.json({ address: user.gonkaAddress, exists: true });
       }
-      // User exists but no wallet - add wallet
+      // User exists but no wallet - add wallet (local generation, instant)
       const wallet = await generateWallet();
       await db.update(users).set({
         gonkaAddress: wallet.address,
         encryptedPrivateKey: wallet.encryptedPrivateKey,
         encryptedMnemonic: wallet.encryptedMnemonic,
-        inferenceRegistered: true,
-        inferenceRegisteredAt: new Date(),
+        inferenceRegistered: false, // Will register lazily on first inference
       }).where(eq(users.clerkId, userId));
       return NextResponse.json({ address: wallet.address, provisioned: true });
     }
@@ -46,8 +45,7 @@ export async function POST() {
         gonkaAddress: wallet.address,
         encryptedPrivateKey: wallet.encryptedPrivateKey,
         encryptedMnemonic: wallet.encryptedMnemonic,
-        inferenceRegistered: true,
-        inferenceRegisteredAt: new Date(),
+        inferenceRegistered: false,
       }).where(eq(users.email, email));
       return NextResponse.json({ address: wallet.address, updated: true });
     }
@@ -62,8 +60,7 @@ export async function POST() {
       gonkaAddress: wallet.address,
       encryptedPrivateKey: wallet.encryptedPrivateKey,
       encryptedMnemonic: wallet.encryptedMnemonic,
-      inferenceRegistered: true,
-      inferenceRegisteredAt: new Date(),
+      inferenceRegistered: false,
     });
     
     return NextResponse.json({ address: wallet.address, created: true });

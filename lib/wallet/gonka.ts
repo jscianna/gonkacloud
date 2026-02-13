@@ -1,3 +1,5 @@
+import { Bip39, EnglishMnemonic, Slip10, Slip10Curve, stringToPath } from "@cosmjs/crypto";
+import { toHex } from "@cosmjs/encoding";
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { SigningStargateClient } from "@cosmjs/stargate";
 
@@ -46,9 +48,16 @@ function ngonkaToGonkaString(ngonka: string) {
   return fracStr.length ? `${whole.toString()}.${fracStr}` : whole.toString();
 }
 
+/**
+ * Generate a new Gonka wallet locally (instant, no on-chain registration).
+ * On-chain registration happens lazily when user first uses inference.
+ */
 export async function generateWallet(): Promise<{ address: string; encryptedMnemonic: string; encryptedPrivateKey: string }> {
-  // 24-word mnemonic
-  const wallet = await DirectSecp256k1HdWallet.generate(24, { prefix: ADDRESS_PREFIX });
+  // 24-word mnemonic with Gonka HD path (coin type 1200)
+  const wallet = await DirectSecp256k1HdWallet.generate(24, { 
+    prefix: ADDRESS_PREFIX,
+    hdPaths: [stringToPath("m/44'/1200'/0'/0/0")],
+  });
 
   let mnemonic = wallet.mnemonic;
   try {
@@ -59,13 +68,13 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
       throw new Error("Failed to generate account");
     }
 
-    const registration = await registerGonkaWallet(mnemonic);
-    if (registration.address !== account.address) {
-      throw new Error("Registered wallet address mismatch");
-    }
+    // Derive private key for signing (same path as registration)
+    const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
+    const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, stringToPath("m/44'/1200'/0'/0/0"));
+    const privateKeyHex = toHex(privkey);
 
     const encryptedMnemonic = await encrypt(mnemonic);
-    const encryptedPrivateKey = await encrypt(registration.privateKey);
+    const encryptedPrivateKey = await encrypt(privateKeyHex);
 
     return {
       address: account.address,
@@ -73,8 +82,25 @@ export async function generateWallet(): Promise<{ address: string; encryptedMnem
       encryptedPrivateKey,
     };
   } finally {
-    // Best-effort cleanup (string is immutable, but we still drop the reference).
     mnemonic = "";
+  }
+}
+
+/**
+ * Register wallet on-chain as inference participant.
+ * Call this lazily before first inference, not on wallet creation.
+ */
+export async function registerWalletOnChain(encryptedMnemonic: string): Promise<{ address: string; pubkey: string }> {
+  let mnemonic: string | null = null;
+  try {
+    mnemonic = await decrypt(encryptedMnemonic);
+    const registration = await registerGonkaWallet(mnemonic);
+    return { address: registration.address, pubkey: registration.pubkey };
+  } finally {
+    if (mnemonic) {
+      mnemonic = "";
+      mnemonic = null;
+    }
   }
 }
 

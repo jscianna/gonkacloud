@@ -73,19 +73,16 @@ export async function POST(req: Request) {
           gonkaAddress: wallet.address,
           encryptedPrivateKey: wallet.encryptedPrivateKey,
           encryptedMnemonic: wallet.encryptedMnemonic,
-          inferenceRegistered: true,
-          inferenceRegisteredAt: new Date(),
+          inferenceRegistered: false, // Will register lazily on first inference
         })
         .onConflictDoUpdate({
           target: users.clerkId,
           set: {
             email,
-            balanceUsd: "0.00",
             gonkaAddress: wallet.address,
             encryptedPrivateKey: wallet.encryptedPrivateKey,
             encryptedMnemonic: wallet.encryptedMnemonic,
-            inferenceRegistered: true,
-            inferenceRegisteredAt: new Date(),
+            inferenceRegistered: false,
           },
         });
 
