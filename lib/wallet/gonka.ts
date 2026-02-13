@@ -106,6 +106,7 @@ export async function registerWalletOnChain(encryptedMnemonic: string): Promise<
 
 export async function getBalance(address: string): Promise<{ gonka: string; ngonka: string }> {
   try {
+    // Try search endpoint first
     const response = await fetch(`${GONKA_API_URL}/search?query=${address}`, {
       headers: {
         "X-API-Key": GONKA_API_KEY || "",
@@ -114,28 +115,73 @@ export async function getBalance(address: string): Promise<{ gonka: string; ngon
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      console.error("Balance fetch failed:", response.status);
-      return { gonka: "0", ngonka: "0" };
+    if (response.ok) {
+      const data = (await response.json()) as {
+        type?: string;
+        found?: boolean;
+        from_cache?: boolean;
+        data?: {
+          balances?: Array<{ denom?: string; amount?: string }>;
+        };
+      };
+
+      if (data.type === "wallet" && data.found && data.data?.balances) {
+        const balance = data.data.balances.find((b) => b.denom === "ngonka");
+        if (balance?.amount && balance.amount !== "0") {
+          const ngonka = balance.amount;
+          const gonkaNum = Number(ngonka) / 1_000_000_000;
+          return {
+            ngonka,
+            gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+          };
+        }
+      }
     }
 
-    const data = (await response.json()) as {
-      type?: string;
-      found?: boolean;
-      data?: {
-        balances?: Array<{ denom?: string; amount?: string }>;
-      };
-    };
+    // Fallback: Calculate balance from transaction history
+    // This handles cases where the search endpoint has stale cache
+    const txResponse = await fetch(`${GONKA_API_URL}/wallets/${address}/transactions?limit=100`, {
+      headers: {
+        "X-API-Key": GONKA_API_KEY || "",
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
 
-    if (data.type === "wallet" && data.found && data.data?.balances) {
-      const balance = data.data.balances.find((b) => b.denom === "ngonka");
-      const ngonka = balance?.amount || "0";
-      const gonkaNum = Number(ngonka) / 1_000_000_000;
-
-      return {
-        ngonka,
-        gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+    if (txResponse.ok) {
+      const txData = (await txResponse.json()) as {
+        items?: Array<{
+          amount?: string;
+          direction?: string;
+          status?: string;
+        }>;
       };
+
+      if (txData.items && txData.items.length > 0) {
+        let balanceNgonka = 0n;
+        for (const tx of txData.items) {
+          if (tx.status !== "success") continue;
+          // Parse amount like "800000000 ngonka"
+          const match = tx.amount?.match(/^(\d+)\s*ngonka$/i);
+          if (match) {
+            const amount = BigInt(match[1]);
+            if (tx.direction === "in") {
+              balanceNgonka += amount;
+            } else if (tx.direction === "out") {
+              balanceNgonka -= amount;
+            }
+          }
+        }
+        
+        if (balanceNgonka > 0n) {
+          const ngonka = balanceNgonka.toString();
+          const gonkaNum = Number(balanceNgonka) / 1_000_000_000;
+          return {
+            ngonka,
+            gonka: gonkaNum.toFixed(9).replace(/\.?0+$/, "") || "0",
+          };
+        }
+      }
     }
 
     return { gonka: "0", ngonka: "0" };
