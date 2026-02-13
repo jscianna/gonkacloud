@@ -10,6 +10,8 @@ const RPC_URL = "http://node1.gonka.ai:8000/chain-rpc/";
 const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 const CLOCK_SKEW_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY_MS = 1000; // 1 second, doubles each retry
 
 // Clock skew cache
 let cachedClockSkewMs: number | null = null;
@@ -182,6 +184,61 @@ async function getProviderWithFallback(): Promise<SelectedProvider> {
   );
 }
 
+/**
+ * Get all eligible providers for rotation on rate limits.
+ */
+async function getAllProviders(nodeUrl: string): Promise<SelectedProvider[]> {
+  const endpointsToTry = [
+    `${nodeUrl}/v1/epochs/current/participants`,
+    `${nodeUrl}/api/v1/participants`,
+  ];
+
+  for (const participantsUrl of endpointsToTry) {
+    try {
+      const participantsRes = await fetch(participantsUrl, {
+        signal: AbortSignal.timeout(PROVIDER_FETCH_TIMEOUT_MS),
+      });
+
+      if (!participantsRes.ok) continue;
+
+      const data = (await participantsRes.json()) as any;
+      const list =
+        data?.active_participants?.participants ||
+        data?.participants ||
+        data?.data?.active_participants?.participants ||
+        data?.data?.participants ||
+        [];
+
+      if (Array.isArray(list)) {
+        const eligible = list.filter((p: any) => {
+          const address = String(p?.index || p?.id || "");
+          const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
+          return ALLOWED_TRANSFER_AGENTS.includes(address) && Boolean(inferenceUrl);
+        });
+
+        // Sort by weight descending
+        const ranked = eligible.sort((a: any, b: any) => getProviderWeight(b) - getProviderWeight(a));
+        
+        return ranked.map((provider: any) => ({
+          providerTransferAddress: String(provider.index || provider.id || ""),
+          inferenceUrl: String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, ""),
+        })).filter((p: SelectedProvider) => p.providerTransferAddress && p.inferenceUrl);
+      }
+    } catch (e) {
+      console.warn("getAllProviders failed:", participantsUrl);
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Sleep helper for retry delays.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
   // Cosmos standard HD path
   const hdPath = stringToPath("m/44'/1200'/0'/0/0");
@@ -221,9 +278,26 @@ export async function gonkaInference(params: {
     console.log("Step: derive private key hex");
     const privateKeyHex = await derivePrivateKeyHexFromMnemonic(mnemonic);
 
-    console.log("Step: fetch provider using bootstrap fallback");
-    const provider = await getProviderWithFallback();
-    const providerTransferAddress = provider.providerTransferAddress;
+    // Get all available providers for rotation on rate limits
+    console.log("Step: fetch providers for rotation");
+    let allProviders: SelectedProvider[] = [];
+    for (const nodeUrl of PARTICIPANT_BOOTSTRAP_NODES) {
+      try {
+        allProviders = await getAllProviders(nodeUrl);
+        if (allProviders.length > 0) break;
+      } catch (e) {
+        console.warn("Failed to get providers from:", nodeUrl);
+      }
+    }
+
+    // Fallback to single provider if getAllProviders fails
+    if (allProviders.length === 0) {
+      console.log("Falling back to single provider");
+      const singleProvider = await getProviderWithFallback();
+      allProviders = [singleProvider];
+    }
+
+    console.log("Available providers:", allProviders.length);
 
     const payload = {
       model: params.model,
@@ -234,51 +308,112 @@ export async function gonkaInference(params: {
     };
 
     const payloadJson = JSON.stringify(payload);
+    requireGonkaAddress(params.gonkaAddress);
 
-    // Get clock skew and adjust timestamp
-    // Gonka nodes can be 30+ minutes behind real time
+    // Get clock skew once
     console.log("Step: get clock skew");
     const clockSkewMs = await getClockSkew();
-    const adjustedTimeMs = Math.floor(Date.now() - clockSkewMs);
-    const timestampNs = BigInt(adjustedTimeMs) * 1_000_000n;
-    console.log("Adjusted timestamp (ms):", adjustedTimeMs, "Skew:", clockSkewMs);
 
-    const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
+    // Retry loop with provider rotation
+    let lastError: Error | null = null;
+    let providerIndex = 0;
 
-    requireGonkaAddress(params.gonkaAddress);
-    const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
-    console.log("Target URL:", targetUrl);
-    console.log("Provider transferAddress:", providerTransferAddress);
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      const provider = allProviders[providerIndex % allProviders.length];
+      const providerTransferAddress = provider.providerTransferAddress;
 
-    console.log("Gonka inference URL:", provider.inferenceUrl);
-    console.log("Gonka inference headers:", {
-      Authorization: `${signature.substring(0, 20)}...`,
-      "X-Requester-Address": params.gonkaAddress,
-      "X-Timestamp": timestampNs.toString(),
-    });
+      // Fresh timestamp for each attempt
+      const adjustedTimeMs = Math.floor(Date.now() - clockSkewMs);
+      const timestampNs = BigInt(adjustedTimeMs) * 1_000_000n;
+      
+      if (attempt > 0) {
+        console.log(`Retry attempt ${attempt + 1}/${MAX_RETRIES} with provider: ${providerTransferAddress}`);
+      } else {
+        console.log("Adjusted timestamp (ms):", adjustedTimeMs, "Skew:", clockSkewMs);
+      }
 
-    console.log("Step: send inference request");
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), INFERENCE_FETCH_TIMEOUT_MS);
+      const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
 
-    const res = await fetch(targetUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: signature,
-        "x-requester-address": params.gonkaAddress,
-        "x-timestamp": timestampNs.toString(),
-      },
-      body: payloadJson,
-      signal: controller.signal,
-    })
-      .catch((err: any) => {
-        console.error("Fetch cause:", err?.cause);
-        throw err;
-      })
-      .finally(() => clearTimeout(timeoutId));
+      const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
+      console.log("Target URL:", targetUrl);
+      console.log("Provider transferAddress:", providerTransferAddress);
 
-    return res;
+      console.log("Gonka inference URL:", provider.inferenceUrl);
+      console.log("Gonka inference headers:", {
+        Authorization: `${signature.substring(0, 20)}...`,
+        "X-Requester-Address": params.gonkaAddress,
+        "X-Timestamp": timestampNs.toString(),
+      });
+
+      console.log("Step: send inference request");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), INFERENCE_FETCH_TIMEOUT_MS);
+
+      try {
+        const res = await fetch(targetUrl, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: signature,
+            "x-requester-address": params.gonkaAddress,
+            "x-timestamp": timestampNs.toString(),
+          },
+          body: payloadJson,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        // Check for rate limit
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("retry-after");
+          const delayMs = retryAfter 
+            ? parseInt(retryAfter, 10) * 1000 
+            : INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+          
+          console.warn(`Rate limited (429) by ${provider.inferenceUrl}. Retrying in ${delayMs}ms...`);
+          
+          // Rotate to next provider
+          providerIndex++;
+          
+          if (attempt < MAX_RETRIES - 1) {
+            await sleep(delayMs);
+            continue;
+          }
+        }
+
+        // Check for server errors (5xx) - also retry
+        if (res.status >= 500 && res.status < 600) {
+          const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+          console.warn(`Server error (${res.status}) from ${provider.inferenceUrl}. Retrying in ${delayMs}ms...`);
+          
+          providerIndex++;
+          
+          if (attempt < MAX_RETRIES - 1) {
+            await sleep(delayMs);
+            continue;
+          }
+        }
+
+        console.log("Gonka response status:", res.status);
+        return res;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.error("Fetch error:", lastError.message);
+        
+        // Rotate provider on network errors too
+        providerIndex++;
+        
+        if (attempt < MAX_RETRIES - 1) {
+          const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+          console.log(`Retrying in ${delayMs}ms...`);
+          await sleep(delayMs);
+        }
+      }
+    }
+
+    throw lastError || new Error("All inference attempts failed");
   } finally {
     // CRITICAL: zero mnemonic reference
     if (mnemonic) {
