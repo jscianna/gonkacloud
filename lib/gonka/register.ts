@@ -29,21 +29,31 @@ export async function registerGonkaWallet(mnemonic: string): Promise<{
   let registered = false;
 
   for (const endpoint of registrationEndpoints) {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json", accept: "application/json" },
-      body: JSON.stringify({ pub_key: pubkeyBase64, address }),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ pub_key: pubkeyBase64, address }),
+      });
 
-    const text = await response.text().catch(() => "");
-    const lowered = text.toLowerCase();
+      const text = await response.text().catch(() => "");
+      console.log("Registration response:", response.status, text);
+      const lowered = text.toLowerCase();
 
-    if (response.ok || lowered.includes("already")) {
-      registered = true;
-      break;
+      if (response.ok || lowered.includes("already")) {
+        registered = true;
+        break;
+      }
+
+      lastError = `Gonka registration failed (${response.status}): ${text || response.statusText}`;
+    } catch (error) {
+      console.error(
+        "Registration request error:",
+        endpoint,
+        error instanceof Error ? error.message : String(error)
+      );
+      lastError = error instanceof Error ? error.message : String(error);
     }
-
-    lastError = `Gonka registration failed (${response.status}): ${text || response.statusText}`;
   }
 
   if (!registered) {

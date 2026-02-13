@@ -41,7 +41,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No Gonka wallet" }, { status: 400 });
     }
 
-    if (!user.inferenceRegistered) {
+    console.log(
+      "Checking registration for:",
+      user.gonkaAddress,
+      "registered:",
+      user.inferenceRegistered
+    );
+
+    if (user.inferenceRegistered !== true) {
       try {
         await registerEncryptedMnemonicWallet({
           encryptedMnemonic: user.encryptedMnemonic,
@@ -54,7 +61,12 @@ export async function POST(req: NextRequest) {
             inferenceRegisteredAt: new Date(),
           })
           .where(eq(users.clerkId, userId));
-      } catch {
+      } catch (registrationError) {
+        console.error(
+          "Wallet registration failed for:",
+          user.gonkaAddress,
+          registrationError instanceof Error ? registrationError.message : String(registrationError)
+        );
         return NextResponse.json({ error: "Wallet not registered for inference" }, { status: 400 });
       }
     }
