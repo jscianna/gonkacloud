@@ -1,31 +1,21 @@
+/**
+ * OpenAI-compatible models endpoint
+ */
+
 import { NextResponse } from "next/server";
 
-import { ApiAuthError, validateKey } from "@/lib/api/validate-key";
-import { GONKA_MODELS } from "@/lib/gonka/client";
+const MODELS = [
+  {
+    id: "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8",
+    object: "model",
+    created: 1704067200, // Jan 1 2024
+    owned_by: "dogecat",
+  },
+];
 
-export async function GET(req: Request) {
-  try {
-    await validateKey(req);
-
-    const data = GONKA_MODELS.map((id) => ({
-      id,
-      object: "model",
-      created: 0,
-      owned_by: "gonka",
-    }));
-
-    return NextResponse.json({ object: "list", data }, { status: 200 });
-  } catch (error) {
-    if (error instanceof ApiAuthError) {
-      return NextResponse.json(
-        { error: { message: error.message, type: error.type, code: error.code } },
-        { status: error.status }
-      );
-    }
-
-    return NextResponse.json(
-      { error: { message: "Failed to list models", type: "server_error", code: "internal_error" } },
-      { status: 500 }
-    );
-  }
+export async function GET() {
+  return NextResponse.json({
+    object: "list",
+    data: MODELS,
+  });
 }

@@ -191,7 +191,7 @@ export default async function ApiDocsPage() {
 {`from openai import OpenAI
 
 client = OpenAI(
-    base_url="https://dogecat.ai/api/v1",
+    base_url="https://dogecat.com/api/v1",
     api_key="your-api-key"
 )
 
@@ -221,7 +221,7 @@ print(response.choices[0].message.content)`}
                 </div>
                 <pre className="overflow-x-auto p-4 text-sm">
                   <code className="text-white/80">
-{`curl https://dogecat.ai/api/v1/chat/completions \\
+{`curl https://dogecat.com/api/v1/chat/completions \\
   -H "Authorization: Bearer your-api-key" \\
   -H "Content-Type: application/json" \\
   -d '{
