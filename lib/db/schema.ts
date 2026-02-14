@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -48,16 +48,51 @@ export const transactions = pgTable("transactions", {
     .references(() => users.id, { onDelete: "cascade" }),
   type: varchar("type", { length: 32 }).notNull(),
   amountUsd: decimal("amount_usd", { precision: 12, scale: 4 }).notNull(),
-  // Balance after applying this transaction (computed at the time it was recorded).
   balanceAfterUsd: decimal("balance_after_usd", { precision: 12, scale: 4 }),
   stripePaymentId: varchar("stripe_payment_id", { length: 255 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const usersRelations = relations(users, ({ many }) => ({
+// New: API Subscriptions for token-based billing
+export const apiSubscriptions = pgTable("api_subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }).unique(),
+  stripePriceId: varchar("stripe_price_id", { length: 255 }),
+  status: varchar("status", { length: 32 }).notNull().default("active"), // active, canceled, past_due, trialing
+  tokensAllocated: bigint("tokens_allocated", { mode: "bigint" }).notNull().default(0n),
+  tokensUsed: bigint("tokens_used", { mode: "bigint" }).notNull().default(0n),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Token transfers (sending GONKA to user wallets)
+export const tokenTransfers = pgTable("token_transfers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").references(() => apiSubscriptions.id, { onDelete: "set null" }),
+  fromAddress: varchar("from_address", { length: 255 }).notNull(),
+  toAddress: varchar("to_address", { length: 255 }).notNull(),
+  amountNgonka: varchar("amount_ngonka", { length: 64 }).notNull(),
+  txHash: varchar("tx_hash", { length: 255 }),
+  status: varchar("status", { length: 32 }).notNull().default("pending"), // pending, success, failed
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const usersRelations = relations(users, ({ many, one }) => ({
   apiKeys: many(apiKeys),
   usageLogs: many(usageLogs),
   transactions: many(transactions),
+  subscription: one(apiSubscriptions),
+  tokenTransfers: many(tokenTransfers),
 }));
 
 export const apiKeysRelations = relations(apiKeys, ({ one, many }) => ({
@@ -79,14 +114,21 @@ export const usageLogsRelations = relations(usageLogs, ({ one }) => ({
   }),
 }));
 
-export const transactionsRelations = relations(transactions, ({ one }) => ({
+export const apiSubscriptionsRelations = relations(apiSubscriptions, ({ one, many }) => ({
   user: one(users, {
-    fields: [transactions.userId],
+    fields: [apiSubscriptions.userId],
     references: [users.id],
   }),
+  tokenTransfers: many(tokenTransfers),
 }));
 
-export type User = typeof users.$inferSelect;
-export type ApiKey = typeof apiKeys.$inferSelect;
-export type UsageLog = typeof usageLogs.$inferSelect;
-export type Transaction = typeof transactions.$inferSelect;
+export const tokenTransfersRelations = relations(tokenTransfers, ({ one }) => ({
+  user: one(users, {
+    fields: [tokenTransfers.userId],
+    references: [users.id],
+  }),
+  subscription: one(apiSubscriptions, {
+    fields: [tokenTransfers.subscriptionId],
+    references: [apiSubscriptions.id],
+  }),
+}));
