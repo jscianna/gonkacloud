@@ -42,41 +42,124 @@ export default function PrivacyPolicy() {
               </p>
             </section>
 
+            {/* CRITICAL WARNING BOX */}
             <section>
-              <h2 className="text-xl font-semibold text-white">2. Critical Disclosure: Decentralized Processing</h2>
+              <div className="bg-red-500/20 border-2 border-red-500/50 rounded-xl p-6 my-6">
+                <h2 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                  🚨 CRITICAL PRIVACY WARNINGS — READ BEFORE USING
+                </h2>
+                
+                <div className="space-y-4">
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">❌ NO ENCRYPTION ON INFERENCE NETWORK</p>
+                    <p className="text-white/90">
+                      The Gonka decentralized network does <strong>NOT</strong> use confidential computing or end-to-end encryption 
+                      for inference processing. <strong>Node operators CAN potentially see your prompts and AI responses in plaintext.</strong>
+                    </p>
+                  </div>
+
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">💾 CHAT HISTORY IS STORED IN PLAINTEXT</p>
+                    <p className="text-white/90">
+                      Your chat history is stored in our PostgreSQL database <strong>without end-to-end encryption</strong>. 
+                      While we do not actively monitor conversations, Block Thyme, LLC technically has the ability to access 
+                      stored chat data.
+                    </p>
+                  </div>
+
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">🤖 APPLICATION BUILT WITH AI ASSISTANCE</p>
+                    <p className="text-white/90">
+                      This application was largely developed with the assistance of AI coding agents. While we strive for quality, 
+                      the software may contain bugs, security vulnerabilities, or unexpected behaviors inherent to AI-assisted development.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-red-900/30 rounded-lg border border-red-500/30">
+                  <p className="font-bold text-red-300 text-lg mb-2">🚫 DO NOT SEND:</p>
+                  <ul className="list-disc pl-5 space-y-1 text-white/90">
+                    <li><strong>Passwords or authentication credentials</strong></li>
+                    <li><strong>API keys, tokens, or secrets</strong></li>
+                    <li><strong>Credit card numbers or financial account information</strong></li>
+                    <li><strong>Social security numbers or government IDs</strong></li>
+                    <li><strong>Medical records or health information</strong></li>
+                    <li><strong>Trade secrets or confidential business data</strong></li>
+                    <li><strong>Private keys or cryptocurrency seed phrases</strong></li>
+                    <li><strong>Any information you need to remain confidential</strong></li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold text-white">2. Decentralized Network — No Confidential Compute</h2>
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
-                <p className="font-semibold text-amber-400 mb-2">⚠️ IMPORTANT: DECENTRALIZED DATA PROCESSING</p>
+                <p className="font-semibold text-amber-400 mb-2">⚠️ NO ENCRYPTION DURING INFERENCE</p>
                 <p>
-                  Dogecat operates as an interface to the Gonka decentralized network. When you submit prompts or data to 
-                  the Service, that data is transmitted to and processed by independent third-party node operators distributed 
-                  globally. This has significant privacy implications:
+                  Dogecat routes your AI requests through the Gonka decentralized network. This network operates 
+                  <strong> WITHOUT confidential computing guarantees</strong>:
                 </p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li>Your prompts and inputs are transmitted to decentralized network nodes that we do not own, operate, or control</li>
-                  <li>We cannot guarantee the privacy practices of individual node operators within the Gonka network</li>
-                  <li>Node operators may be located in various jurisdictions with different data protection laws</li>
-                  <li>We cannot technically enforce "Right to be Forgotten" (GDPR Article 17) requests on the decentralized network</li>
-                  <li>Data transmitted to the network may be cached, logged, or retained by node operators</li>
+                  <li><strong>Node operators can see your prompts</strong> — Your input text is visible to the operators processing your request</li>
+                  <li><strong>Node operators can see AI responses</strong> — The generated outputs are also visible during processing</li>
+                  <li><strong>No end-to-end encryption</strong> — Data is not encrypted in a way that prevents node access</li>
+                  <li><strong>No trusted execution environments</strong> — Processing does not occur in secure enclaves</li>
+                  <li><strong>Operators may log data</strong> — Node operators may record, cache, or retain your data indefinitely</li>
+                  <li><strong>Unknown jurisdictions</strong> — Nodes operate globally under varying legal frameworks</li>
                 </ul>
               </div>
               <p className="font-semibold text-white">
-                DO NOT submit sensitive personal information, trade secrets, confidential business information, 
-                protected health information, or any data you would not want potentially visible to third parties.
+                Treat every prompt as if it will be read by unknown third parties. Do not submit any data you 
+                need to keep private or confidential.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">3. Information We Collect</h2>
+              <h2 className="text-xl font-semibold text-white">3. Chat History Storage</h2>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
+                <p className="font-semibold text-white mb-2">📁 What We Store</p>
+                <p className="mb-3">
+                  When you use the Dogecat chat interface, we store the following in our database:
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Your chat messages (prompts you send)</li>
+                  <li>AI responses generated for you</li>
+                  <li>Timestamps of conversations</li>
+                  <li>Associated account information</li>
+                </ul>
+              </div>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-amber-400 mb-2">⚠️ Storage Is NOT End-to-End Encrypted</p>
+                <p>
+                  Chat data is stored in plaintext in our PostgreSQL database. This means:
+                </p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li><strong>Block Thyme, LLC has technical access</strong> to stored conversations</li>
+                  <li>We do <strong>not actively monitor</strong> or review your chats under normal circumstances</li>
+                  <li>We may access data if required by law, to investigate abuse, or to provide support you request</li>
+                  <li>Database backups contain chat history in readable form</li>
+                  <li>In a data breach, chat history could potentially be exposed</li>
+                </ul>
+              </div>
+              <p>
+                If you require end-to-end encrypted communications, this Service is not appropriate for your needs.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold text-white">4. Information We Collect</h2>
               
-              <h3 className="text-lg font-medium text-white/90 mt-4">3.1 Information You Provide</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">4.1 Information You Provide</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Account Information:</strong> Email address, username, password (hashed), and profile information when you create an account</li>
                 <li><strong>Payment Information:</strong> Billing address and payment details (processed by our payment processors; we do not store full card numbers)</li>
-                <li><strong>Prompts and Inputs:</strong> Text, files, or other content you submit to the AI models through the Service</li>
+                <li><strong>Chat History:</strong> All prompts you submit and AI responses you receive are stored in our database (see Section 3)</li>
+                <li><strong>API Usage:</strong> If using our API, request/response data may be logged for operational purposes</li>
                 <li><strong>Communications:</strong> Information you provide when contacting support or providing feedback</li>
               </ul>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">3.2 Information Collected Automatically</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">4.2 Information Collected Automatically</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Usage Data:</strong> API calls, timestamps, token counts, model selections, and usage patterns</li>
                 <li><strong>Device Information:</strong> IP address, browser type, operating system, device identifiers</li>
@@ -84,7 +167,7 @@ export default function PrivacyPolicy() {
                 <li><strong>Cookies:</strong> Authentication tokens, session identifiers, and analytics cookies</li>
               </ul>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">3.3 Information from Third Parties</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">4.3 Information from Third Parties</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Authentication providers (if you sign in via OAuth)</li>
                 <li>Payment processors (transaction confirmations)</li>
@@ -93,7 +176,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">4. How We Use Your Information</h2>
+              <h2 className="text-xl font-semibold text-white">5. How We Use Your Information</h2>
               <p>We use the information we collect to:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Provide, maintain, and improve the Service</li>
@@ -108,9 +191,9 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">5. Data Retention</h2>
+              <h2 className="text-xl font-semibold text-white">6. Data Retention</h2>
               
-              <h3 className="text-lg font-medium text-white/90 mt-4">5.1 Block Thyme, LLC Retention</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">6.1 Block Thyme, LLC Retention</h3>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
                 <p className="font-semibold text-white mb-2">Our Data Retention Practices:</p>
                 <ul className="list-disc pl-5 space-y-1">
@@ -121,7 +204,7 @@ export default function PrivacyPolicy() {
                 </ul>
               </div>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">5.2 Decentralized Network Retention</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">6.2 Decentralized Network Retention</h3>
               <p className="text-amber-400">
                 IMPORTANT: We cannot control data retention by Gonka network node operators. Your prompts may be logged, 
                 cached, or retained by independent node operators, and we have no technical ability to delete such data 
@@ -130,16 +213,16 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">6. Information Sharing and Disclosure</h2>
+              <h2 className="text-xl font-semibold text-white">7. Information Sharing and Disclosure</h2>
               <p>We may share your information in the following circumstances:</p>
               
-              <h3 className="text-lg font-medium text-white/90 mt-4">6.1 Decentralized Network Processing</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">7.1 Decentralized Network Processing</h3>
               <p>
                 Your prompts and inputs are transmitted to Gonka network nodes for inference processing. This is essential 
                 to providing the Service and cannot be avoided.
               </p>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">6.2 Service Providers</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">7.2 Service Providers</h3>
               <p>
                 We share information with third-party service providers who perform services on our behalf, including:
               </p>
@@ -150,26 +233,26 @@ export default function PrivacyPolicy() {
                 <li>Customer support tools</li>
               </ul>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">6.3 Legal Requirements</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">7.3 Legal Requirements</h3>
               <p>
                 We may disclose information if required by law, subpoena, court order, or government request, or if we 
                 believe disclosure is necessary to protect our rights, your safety, or the safety of others.
               </p>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">6.4 Business Transfers</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">7.4 Business Transfers</h3>
               <p>
                 In the event of a merger, acquisition, or sale of assets, your information may be transferred as part of 
                 that transaction.
               </p>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">6.5 With Your Consent</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">7.5 With Your Consent</h3>
               <p>
                 We may share information with third parties when you have given us explicit consent to do so.
               </p>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">7. Data Security</h2>
+              <h2 className="text-xl font-semibold text-white">8. Data Security</h2>
               <p>
                 We implement reasonable technical and organizational measures to protect your information, including:
               </p>
@@ -187,12 +270,12 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">8. Your Privacy Rights</h2>
+              <h2 className="text-xl font-semibold text-white">9. Your Privacy Rights</h2>
               <p>
                 Depending on your location, you may have certain rights regarding your personal information:
               </p>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">8.1 General Rights</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">9.1 General Rights</h3>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Access:</strong> Request a copy of the personal information we hold about you</li>
                 <li><strong>Correction:</strong> Request correction of inaccurate information</li>
@@ -201,7 +284,7 @@ export default function PrivacyPolicy() {
                 <li><strong>Opt-out:</strong> Opt out of marketing communications</li>
               </ul>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">8.2 Limitations on Rights</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">9.2 Limitations on Rights</h3>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
                 <p className="font-semibold text-white mb-2">Important Limitations:</p>
                 <p>
@@ -215,14 +298,14 @@ export default function PrivacyPolicy() {
                 </ul>
               </div>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">8.3 California Residents (CCPA)</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">9.3 California Residents (CCPA)</h3>
               <p>
                 California residents have additional rights under the California Consumer Privacy Act (CCPA), including 
                 the right to know what personal information is collected, the right to delete, and the right to opt-out 
                 of the sale of personal information. We do not sell personal information.
               </p>
 
-              <h3 className="text-lg font-medium text-white/90 mt-4">8.4 European Residents (GDPR)</h3>
+              <h3 className="text-lg font-medium text-white/90 mt-4">9.4 European Residents (GDPR)</h3>
               <p>
                 If you are in the European Economic Area (EEA), you have rights under the General Data Protection 
                 Regulation (GDPR). Our legal basis for processing personal data includes consent, contractual necessity, 
@@ -232,7 +315,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">9. Cookies and Tracking Technologies</h2>
+              <h2 className="text-xl font-semibold text-white">10. Cookies and Tracking Technologies</h2>
               <p>We use cookies and similar tracking technologies for:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong>Essential cookies:</strong> Required for authentication and security</li>
@@ -245,7 +328,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">10. Children's Privacy</h2>
+              <h2 className="text-xl font-semibold text-white">11. Children's Privacy</h2>
               <p>
                 The Service is not intended for users under the age of 18. We do not knowingly collect personal information 
                 from children under 18. If we become aware that we have collected personal information from a child under 18, 
@@ -254,7 +337,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">11. International Data Transfers</h2>
+              <h2 className="text-xl font-semibold text-white">12. International Data Transfers</h2>
               <p>
                 Your information may be transferred to and processed in countries other than your country of residence. 
                 The Gonka decentralized network operates globally, meaning your prompts may be processed by nodes in 
@@ -263,7 +346,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">12. Third-Party Links</h2>
+              <h2 className="text-xl font-semibold text-white">13. Third-Party Links</h2>
               <p>
                 The Service may contain links to third-party websites or services. We are not responsible for the privacy 
                 practices of such third parties. We encourage you to read the privacy policies of any third-party sites 
@@ -272,7 +355,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">13. Changes to This Privacy Policy</h2>
+              <h2 className="text-xl font-semibold text-white">14. Changes to This Privacy Policy</h2>
               <p>
                 We may update this Privacy Policy from time to time. We will notify you of material changes by posting 
                 the updated policy with a new "Last Updated" date. Your continued use of the Service after changes 
@@ -281,7 +364,7 @@ export default function PrivacyPolicy() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">14. Contact Us</h2>
+              <h2 className="text-xl font-semibold text-white">15. Contact Us</h2>
               <p>
                 For questions or concerns about this Privacy Policy or our data practices, please contact us at:
               </p>

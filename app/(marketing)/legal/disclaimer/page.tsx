@@ -34,21 +34,123 @@ export default function ServiceDisclaimer() {
             <section>
               <div className="bg-red-500/20 border-2 border-red-500/50 rounded-xl p-6 my-6">
                 <h2 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
-                  ⚠️ CRITICAL WARNING
+                  🚨 CRITICAL WARNINGS — READ BEFORE USING
                 </h2>
-                <p className="text-lg font-semibold text-white mb-4">
-                  NOT FOR MISSION-CRITICAL APPLICATIONS
+                
+                <div className="space-y-4 mb-6">
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">🚫 NOT FOR MISSION-CRITICAL APPLICATIONS</p>
+                    <p className="text-white/90">
+                      This Service is provided on an experimental, best-effort basis. Do not use for any application 
+                      where failure could result in death, injury, financial loss, or serious consequences.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">❌ NO ENCRYPTION — YOUR DATA IS VISIBLE</p>
+                    <p className="text-white/90">
+                      The Gonka network does NOT use confidential computing. <strong>Third-party node operators 
+                      can see your prompts and AI responses in plaintext.</strong> Never send sensitive data.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">💾 CHAT HISTORY IS NOT END-TO-END ENCRYPTED</p>
+                    <p className="text-white/90">
+                      Conversations are stored in our database in plaintext. Block Thyme, LLC technically has 
+                      access to stored chat data. We don't actively monitor, but data is accessible.
+                    </p>
+                  </div>
+                  
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">🤖 BUILT BY AI AGENTS — USE AT YOUR OWN RISK</p>
+                    <p className="text-white/90">
+                      This application was largely developed by AI coding agents. It may contain bugs, security 
+                      vulnerabilities, or unexpected behaviors. <strong>This is experimental software.</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-red-900/30 rounded-lg border border-red-500/30">
+                  <p className="font-bold text-red-300 text-lg mb-2">🚫 NEVER SEND THROUGH THIS SERVICE:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-white/90">
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Passwords or login credentials</li>
+                      <li>API keys, tokens, or secrets</li>
+                      <li>Credit card / bank account numbers</li>
+                      <li>Social security numbers</li>
+                    </ul>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Medical / health records</li>
+                      <li>Private keys or seed phrases</li>
+                      <li>Trade secrets or confidential IP</li>
+                      <li>Any data requiring confidentiality</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-semibold text-white">1. No Confidential Computing</h2>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-amber-400 mb-2">⚠️ NODE OPERATORS CAN SEE YOUR DATA</p>
+                <p className="mb-2">
+                  The Gonka decentralized network does <strong>NOT</strong> employ:
                 </p>
-                <p className="text-white/90">
-                  This Service is provided on an experimental, best-effort basis using decentralized infrastructure. 
-                  Do not use this Service for any application where failure, delay, or inaccuracy could result in 
-                  death, injury, significant financial loss, legal liability, or other serious consequences.
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>End-to-end encryption for inference processing</li>
+                  <li>Confidential computing or trusted execution environments (TEEs)</li>
+                  <li>Secure enclaves that prevent operator access</li>
+                  <li>Homomorphic encryption or other privacy-preserving computation</li>
+                </ul>
+                <p className="mt-3">
+                  <strong>This means:</strong> When you submit a prompt, the third-party node operator processing 
+                  your request can potentially read your prompt text and the AI's response. Treat every interaction 
+                  as if it will be viewed by unknown parties.
+                </p>
+              </div>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-semibold text-white">2. Chat Storage Practices</h2>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
+                <p className="font-semibold text-white mb-2">💾 How Your Conversations Are Stored</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Chat history is stored in our PostgreSQL database</li>
+                  <li>Storage is <strong>NOT end-to-end encrypted</strong></li>
+                  <li>Block Thyme, LLC has technical access to stored conversations</li>
+                  <li>We do not actively monitor or review chats under normal operations</li>
+                  <li>We may access data for: legal compliance, abuse investigation, or user-requested support</li>
+                  <li>Database backups contain chat history in readable form</li>
+                </ul>
+              </div>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-semibold text-white">3. AI-Assisted Development</h2>
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-purple-400 mb-2">🤖 This Application Was Built by AI Agents</p>
+                <p className="mb-2">
+                  A significant portion of this application's codebase was written by AI coding agents. 
+                  This means:
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>The software may contain bugs or unexpected behaviors</li>
+                  <li>Security vulnerabilities may exist that have not been identified</li>
+                  <li>The code has not undergone traditional human code review for all components</li>
+                  <li>Edge cases may not be handled properly</li>
+                  <li>The application is experimental in nature</li>
+                </ul>
+                <p className="mt-3 font-semibold text-white">
+                  Use this Service at your own risk. We make no guarantees about the quality, security, 
+                  or reliability of AI-generated code.
                 </p>
               </div>
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">1. Nature of the Service</h2>
+              <h2 className="text-xl font-semibold text-white">4. Nature of the Service</h2>
               <p>
                 Dogecat is a service operated by Block Thyme, LLC that provides an interface to access AI inference 
                 capabilities through the Gonka decentralized network. By using this Service, you acknowledge and 
@@ -75,7 +177,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">2. AI Hallucination Warning</h2>
+              <h2 className="text-xl font-semibold text-white">5. AI Hallucination Warning</h2>
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
                 <p className="font-semibold text-amber-400 mb-2">⚠️ AI OUTPUTS MAY BE WRONG</p>
                 <p className="text-white/90">
@@ -98,7 +200,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">3. No Professional Advice</h2>
+              <h2 className="text-xl font-semibold text-white">6. No Professional Advice</h2>
               <p>
                 AI-generated outputs from this Service are for <strong>informational and entertainment purposes only</strong>. 
                 They do not constitute and should never be used as a substitute for:
@@ -136,7 +238,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">4. Service Availability</h2>
+              <h2 className="text-xl font-semibold text-white">7. Service Availability</h2>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
                 <p className="font-semibold text-white mb-2">NO SERVICE LEVEL AGREEMENT (SLA)</p>
                 <p>
@@ -157,7 +259,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">5. Decentralized Network Disclaimer</h2>
+              <h2 className="text-xl font-semibold text-white">8. Decentralized Network Disclaimer</h2>
               <p>
                 The Gonka decentralized network operates independently of Block Thyme, LLC. We explicitly disclaim:
               </p>
@@ -172,7 +274,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">6. User Responsibility</h2>
+              <h2 className="text-xl font-semibold text-white">9. User Responsibility</h2>
               <p className="font-semibold text-emerald-400">
                 YOU ARE 100% RESPONSIBLE FOR:
               </p>
@@ -188,7 +290,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">7. Disclaimer of Warranties</h2>
+              <h2 className="text-xl font-semibold text-white">10. Disclaimer of Warranties</h2>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4 uppercase text-sm">
                 <p>
                   THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, 
@@ -204,7 +306,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">8. Limitation of Liability</h2>
+              <h2 className="text-xl font-semibold text-white">11. Limitation of Liability</h2>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4 uppercase text-sm">
                 <p>
                   TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL BLOCK THYME, LLC, 
@@ -221,7 +323,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">9. Assumption of Risk</h2>
+              <h2 className="text-xl font-semibold text-white">12. Assumption of Risk</h2>
               <p>
                 By using this Service, you expressly acknowledge and assume all risks associated with:
               </p>
@@ -236,7 +338,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">10. Acceptance</h2>
+              <h2 className="text-xl font-semibold text-white">13. Acceptance</h2>
               <p>
                 BY USING THIS SERVICE, YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE 
                 BOUND BY THIS DISCLAIMER, OUR{" "}
@@ -250,7 +352,7 @@ export default function ServiceDisclaimer() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">11. Contact Information</h2>
+              <h2 className="text-xl font-semibold text-white">14. Contact Information</h2>
               <p>
                 For questions about this Disclaimer, please contact us at:
               </p>

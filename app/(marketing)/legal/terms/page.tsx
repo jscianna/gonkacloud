@@ -29,6 +29,60 @@ export default function TermsOfService() {
           <p className="text-white/50 text-sm mb-8">Last updated: February 14, 2026</p>
 
           <div className="space-y-8 text-white/80">
+            
+            {/* CRITICAL WARNING BOX - FIRST THING USERS SEE */}
+            <section>
+              <div className="bg-red-500/20 border-2 border-red-500/50 rounded-xl p-6 my-2">
+                <h2 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
+                  🚨 IMPORTANT WARNINGS — PLEASE READ
+                </h2>
+                
+                <div className="space-y-4">
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">❌ NO ENCRYPTION — NODE OPERATORS CAN SEE YOUR DATA</p>
+                    <p className="text-white/90">
+                      The Gonka network does NOT use confidential computing. <strong>Third-party node operators can potentially 
+                      view your prompts and AI responses.</strong> Do not send any sensitive or confidential information.
+                    </p>
+                  </div>
+
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">💾 CHAT HISTORY STORED WITHOUT E2E ENCRYPTION</p>
+                    <p className="text-white/90">
+                      Your conversations are stored in our database in plaintext. While we don't actively monitor chats, 
+                      Block Thyme, LLC has technical access to stored data.
+                    </p>
+                  </div>
+
+                  <div className="bg-black/30 rounded-lg p-4">
+                    <p className="font-bold text-white text-lg mb-2">🤖 APPLICATION BUILT WITH AI ASSISTANCE</p>
+                    <p className="text-white/90">
+                      This application was largely developed by AI coding agents. The software may contain bugs, 
+                      security vulnerabilities, or unexpected behaviors. <strong>Use at your own risk.</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-red-900/30 rounded-lg border border-red-500/30">
+                  <p className="font-bold text-red-300 text-lg mb-2">🚫 NEVER SEND THROUGH THIS SERVICE:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-white/90">
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Passwords or login credentials</li>
+                      <li>API keys or access tokens</li>
+                      <li>Credit card or bank info</li>
+                      <li>Social security numbers</li>
+                    </ul>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Medical/health records</li>
+                      <li>Private keys or seed phrases</li>
+                      <li>Trade secrets</li>
+                      <li>Any confidential data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </section>
+            
             <section>
               <h2 className="text-xl font-semibold text-white">1. Agreement to Terms</h2>
               <p>
@@ -54,6 +108,18 @@ export default function TermsOfService() {
                 Gonka decentralized network ("Gonka Network"). The Service functions as a front-end access layer to third-party, 
                 independently operated computing nodes that process AI inference requests.
               </p>
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-amber-400 mb-2">⚠️ NO CONFIDENTIAL COMPUTING</p>
+                <p className="mb-2">
+                  The Gonka Network does NOT provide confidential computing or end-to-end encryption for inference:
+                </p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><strong>Node operators can see your prompts</strong> — Your input is visible to processors</li>
+                  <li><strong>Node operators can see responses</strong> — AI outputs are visible during generation</li>
+                  <li><strong>No trusted execution environments</strong> — Processing is not in secure enclaves</li>
+                  <li><strong>Data may be logged</strong> — Operators may record your interactions</li>
+                </ul>
+              </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
                 <p className="font-semibold text-white mb-2">Critical Notice Regarding Decentralized Infrastructure:</p>
                 <ul className="list-disc pl-5 space-y-1">
@@ -64,9 +130,29 @@ export default function TermsOfService() {
                 </ul>
               </div>
             </section>
+            
+            <section>
+              <h2 className="text-xl font-semibold text-white">3. AI-Assisted Development Disclosure</h2>
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-purple-400 mb-2">🤖 Experimental Software Notice</p>
+                <p>
+                  This application was substantially developed with the assistance of AI coding agents and automated tools. 
+                  As a result:
+                </p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li>The software may contain bugs, errors, or unexpected behaviors</li>
+                  <li>Security vulnerabilities may exist that have not been identified</li>
+                  <li>The codebase may include AI-generated code that has not been fully audited</li>
+                  <li>Features may not work as expected in all circumstances</li>
+                </ul>
+                <p className="mt-2 font-semibold text-white">
+                  This Service is provided on an experimental, "as-is" basis. Use at your own risk.
+                </p>
+              </div>
+            </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">3. Eligibility</h2>
+              <h2 className="text-xl font-semibold text-white">4. Eligibility</h2>
               <p>
                 You must be at least eighteen (18) years of age to use this Service. By using the Service, you represent and 
                 warrant that you are at least 18 years old and have the legal capacity to enter into these Terms. If you are 
@@ -76,7 +162,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">4. Account Registration</h2>
+              <h2 className="text-xl font-semibold text-white">5. Account Registration</h2>
               <p>
                 To access certain features of the Service, you may be required to create an account. You agree to:
               </p>
@@ -95,7 +181,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">5. Service Availability and Best-Effort Basis</h2>
+              <h2 className="text-xl font-semibold text-white">6. Service Availability and Best-Effort Basis</h2>
               <p>
                 THE SERVICE IS PROVIDED ON A "BEST-EFFORT" BASIS. We explicitly disclaim any guarantee of:
               </p>
@@ -118,7 +204,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">6. AI Output Disclaimers</h2>
+              <h2 className="text-xl font-semibold text-white">7. AI Output Disclaimers</h2>
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 my-4">
                 <p className="font-semibold text-amber-400 mb-2">⚠️ IMPORTANT AI DISCLAIMER</p>
                 <p>
@@ -150,7 +236,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">7. Prohibited Uses</h2>
+              <h2 className="text-xl font-semibold text-white">8. Prohibited Uses</h2>
               <p>
                 You agree not to use the Service for any purpose that is unlawful or prohibited by these Terms or applicable law. 
                 See our <Link href="/legal/acceptable-use" className="text-emerald-400 hover:underline">Acceptable Use Policy</Link>{" "}
@@ -172,7 +258,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">8. Payment Terms and No Refund Policy</h2>
+              <h2 className="text-xl font-semibold text-white">9. Payment Terms and No Refund Policy</h2>
               <p>
                 Payment for the Service may be required for certain features or usage tiers. By making a payment, you agree to our 
                 payment terms and acknowledge:
@@ -199,7 +285,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">9. Intellectual Property</h2>
+              <h2 className="text-xl font-semibold text-white">10. Intellectual Property</h2>
               <p>
                 <strong>Our Property:</strong> The Service, including its design, code, branding, and documentation (excluding 
                 AI-generated outputs), is owned by Block Thyme, LLC and protected by intellectual property laws.
@@ -216,7 +302,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">10. Disclaimer of Warranties</h2>
+              <h2 className="text-xl font-semibold text-white">11. Disclaimer of Warranties</h2>
               <p className="uppercase font-semibold">
                 THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, 
                 STATUTORY, OR OTHERWISE. WE SPECIFICALLY DISCLAIM ALL IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
@@ -235,7 +321,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">11. Limitation of Liability</h2>
+              <h2 className="text-xl font-semibold text-white">12. Limitation of Liability</h2>
               <p className="uppercase font-semibold">
                 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL BLOCK THYME, LLC, ITS AFFILIATES, OFFICERS, 
                 DIRECTORS, EMPLOYEES, AGENTS, OR LICENSORS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR 
@@ -261,7 +347,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">12. Indemnification</h2>
+              <h2 className="text-xl font-semibold text-white">13. Indemnification</h2>
               <p>
                 You agree to indemnify, defend, and hold harmless Block Thyme, LLC, its affiliates, officers, directors, 
                 employees, agents, and licensors from and against any and all claims, damages, losses, liabilities, costs, 
@@ -278,7 +364,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">13. Termination</h2>
+              <h2 className="text-xl font-semibold text-white">14. Termination</h2>
               <p>
                 We may terminate or suspend your access to the Service immediately, without prior notice or liability, for any 
                 reason, including if you breach these Terms. Upon termination:
@@ -292,7 +378,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">14. Governing Law and Dispute Resolution</h2>
+              <h2 className="text-xl font-semibold text-white">15. Governing Law and Dispute Resolution</h2>
               <p>
                 These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, 
                 without regard to its conflict of law principles.
@@ -310,7 +396,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">15. Changes to Terms</h2>
+              <h2 className="text-xl font-semibold text-white">16. Changes to Terms</h2>
               <p>
                 We reserve the right to modify these Terms at any time. We will notify you of material changes by posting the 
                 updated Terms on the Service with a new "Last Updated" date. Your continued use of the Service after changes 
@@ -319,7 +405,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">16. Miscellaneous</h2>
+              <h2 className="text-xl font-semibold text-white">17. Miscellaneous</h2>
               <p>
                 <strong>Entire Agreement:</strong> These Terms, together with our Privacy Policy and Acceptable Use Policy, 
                 constitute the entire agreement between you and Block Thyme, LLC regarding the Service.
@@ -339,7 +425,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-xl font-semibold text-white">17. Contact Information</h2>
+              <h2 className="text-xl font-semibold text-white">18. Contact Information</h2>
               <p>
                 For questions about these Terms, please contact us at:
               </p>
