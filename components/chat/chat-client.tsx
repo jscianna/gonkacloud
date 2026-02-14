@@ -304,8 +304,8 @@ export function ChatClient({ initialBalanceUsd, isPublic = false }: ChatClientPr
                 <Image
                   src="/logo.svg"
                   alt="dogecat"
-                  width={72}
-                  height={72}
+                  width={216}
+                  height={216}
                   className="relative rounded-2xl"
                 />
               </div>
