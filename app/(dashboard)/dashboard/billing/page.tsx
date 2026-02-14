@@ -158,10 +158,6 @@ export default async function BillingPage() {
                   <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
                   <span>Qwen3-235B model access</span>
                 </li>
-                <li className="flex items-center gap-3">
-                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
-                  <span>Priority support</span>
-                </li>
               </ul>
 
               <SubscribeButton />
