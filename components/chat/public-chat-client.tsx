@@ -268,11 +268,19 @@ export function PublicChatClient() {
           </div>
 
           {/* Footer info */}
-          <div className="mt-3 flex items-center justify-center gap-3 text-xs text-white/30">
-            {tokenCount > 0 && (
-              <span>{tokenCount.toLocaleString()} tokens</span>
-            )}
-            <span>Free preview • <Link href="/api-docs" className="text-white/50 hover:text-white/70">Get API access →</Link></span>
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <div className="flex items-center justify-center gap-3 text-xs text-white/30">
+              {tokenCount > 0 && (
+                <span>{tokenCount.toLocaleString()} tokens</span>
+              )}
+              <span>Free preview • <Link href="/api-docs" className="text-white/50 hover:text-white/70">Get API access →</Link></span>
+            </div>
+            <div className="flex items-center justify-center gap-4 text-xs text-white/20">
+              <Link href="/legal/terms" className="hover:text-white/40 transition">Terms</Link>
+              <Link href="/legal/privacy" className="hover:text-white/40 transition">Privacy</Link>
+              <Link href="/legal/acceptable-use" className="hover:text-white/40 transition">Acceptable Use</Link>
+              <Link href="/legal/disclaimer" className="hover:text-white/40 transition">Disclaimer</Link>
+            </div>
           </div>
         </div>
       </div>
