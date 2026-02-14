@@ -5,10 +5,12 @@ import { NextResponse } from "next/server";
 import { calculateCostUsd, estimateCostUsd, PRICING } from "@/lib/api/pricing";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { db } from "@/lib/db";
-import { transactions, usageLogs, users } from "@/lib/db/schema";
+import { transactions, usageLogs, users, apiSubscriptions } from "@/lib/db/schema";
 import { gonkaInference } from "@/lib/gonka/inference";
-import { registerEncryptedMnemonicWallet } from "@/lib/gonka/register";
-import { getBalance } from "@/lib/wallet/gonka";
+
+// Dogecat wallet - shared backend for all users
+const DOGECAT_WALLET_ADDRESS = process.env.DOGECAT_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
+const DOGECAT_WALLET_ENCRYPTED_MNEMONIC = process.env.DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
 
 class ApiError extends Error {
   status: number;
@@ -119,63 +121,43 @@ export async function POST(req: Request) {
       throw new ApiError(400, "User not provisioned", "invalid_request_error", "user_not_provisioned");
     }
 
-    if (!dbUser.gonkaAddress || !dbUser.encryptedMnemonic) {
-      throw new ApiError(402, "No API subscription. Subscribe to get API access.", "billing_error", "no_subscription");
+    // Check Dogecat wallet is configured
+    if (!DOGECAT_WALLET_ENCRYPTED_MNEMONIC) {
+      throw new ApiError(500, "Service not configured", "server_error", "no_backend_wallet");
     }
 
-    // Check wallet registration
-    if (!dbUser.inferenceRegistered) {
-      try {
-        await registerEncryptedMnemonicWallet({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          expectedAddress: dbUser.gonkaAddress,
-        });
-        await db
-          .update(users)
-          .set({
-            inferenceRegistered: true,
-            inferenceRegisteredAt: new Date(),
-          })
-          .where(eq(users.id, dbUser.id));
-      } catch {
-        throw new ApiError(
-          400,
-          "Wallet registration failed. Please contact support.",
-          "invalid_request_error",
-          "wallet_not_registered"
-        );
-      }
+    // Check user's subscription and token balance
+    let subscription = null;
+    try {
+      subscription = await db.query.apiSubscriptions.findFirst({
+        where: and(
+          eq(apiSubscriptions.userId, dbUser.id),
+          eq(apiSubscriptions.status, "active")
+        ),
+      });
+    } catch (e) {
+      // Table may not exist yet
+      console.warn("Could not fetch subscription:", e instanceof Error ? e.message : e);
     }
 
-    // Check token balance
-    const gonkaBalance = await getBalance(dbUser.gonkaAddress);
-    if (Number(gonkaBalance.ngonka) <= 0) {
+    if (!subscription) {
+      throw new ApiError(402, "No active subscription. Subscribe to get API access.", "billing_error", "no_subscription");
+    }
+
+    const tokensAllocated = subscription.tokensAllocated ?? 0n;
+    const tokensUsed = subscription.tokensUsed ?? 0n;
+    const tokensRemaining = tokensAllocated - tokensUsed;
+
+    if (tokensRemaining <= 0n) {
       throw new ApiError(
         402,
-        "You've run out of tokens. Please upgrade your subscription or wait for your next billing cycle.",
+        "You've run out of tokens. Please wait for your next billing cycle or upgrade your subscription.",
         "billing_error",
         "insufficient_tokens"
       );
     }
 
-    console.log("User:", dbUser?.id, "Gonka Address:", dbUser.gonkaAddress, "Balance:", gonkaBalance.ngonka);
-
-    const reserveUsd = estimateCostUsd(model, messages, typeof maxTokens === "number" ? maxTokens : undefined);
-    const useUsdBilling = false; // Future: enable for USD -> GONKA auto-conversion.
-    let reservedUsd = false;
-
-    if (useUsdBilling) {
-      const currentBalance = Number.parseFloat(dbUser.balanceUsd ?? "0");
-      if (!Number.isFinite(currentBalance) || currentBalance < reserveUsd) {
-        throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
-      }
-
-      const reserved = await reserveFunds(dbUser.id, reserveUsd);
-      if (!reserved) {
-        throw new ApiError(402, "Insufficient balance", "billing_error", "insufficient_balance");
-      }
-      reservedUsd = true;
-    }
+    console.log("User:", dbUser?.id, "Subscription:", subscription.id, "Tokens remaining:", tokensRemaining.toString());
 
     // Sanitize messages: remove empty assistant messages and consecutive duplicates
     const sanitizedMessages = messages.filter((msg: any, index: number, arr: any[]) => {
@@ -198,52 +180,21 @@ export async function POST(req: Request) {
       throw new ApiError(400, "No valid messages provided", "invalid_request_error", "empty_messages");
     }
 
-    console.log("Calling Gonka inference...");
+    console.log("Calling Gonka inference via Dogecat wallet...");
     console.log("Sanitized messages count:", sanitizedMessages.length);
-    let upstreamRes = await gonkaInference({
-      encryptedMnemonic: dbUser.encryptedMnemonic,
-      gonkaAddress: dbUser.gonkaAddress,
+    const upstreamRes = await gonkaInference({
+      encryptedMnemonic: DOGECAT_WALLET_ENCRYPTED_MNEMONIC,
+      gonkaAddress: DOGECAT_WALLET_ADDRESS,
       model,
       messages: sanitizedMessages,
       stream,
       temperature,
       max_tokens: maxTokens,
     });
-
-    if (upstreamRes.status === 500) {
-      try {
-        await registerEncryptedMnemonicWallet({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          expectedAddress: dbUser.gonkaAddress,
-        });
-        await db
-          .update(users)
-          .set({
-            inferenceRegistered: true,
-            inferenceRegisteredAt: new Date(),
-          })
-          .where(eq(users.id, dbUser.id));
-
-        upstreamRes = await gonkaInference({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          gonkaAddress: dbUser.gonkaAddress,
-          model,
-          messages: sanitizedMessages,
-          stream,
-          temperature,
-          max_tokens: maxTokens,
-        });
-      } catch {
-        // fallback to original upstream error handling below
-      }
-    }
     console.log("Gonka response status:", upstreamRes.status);
 
     if (!upstreamRes.ok || !upstreamRes.body) {
       const text = await upstreamRes.text().catch(() => "");
-      if (reservedUsd) {
-        await adjustBalance(dbUser.id, reserveUsd);
-      }
       
       // Handle rate limiting specifically
       if (upstreamRes.status === 429) {
@@ -267,17 +218,20 @@ export async function POST(req: Request) {
 
       const promptTokens = Number(usage?.prompt_tokens ?? 0);
       const completionTokens = Number(usage?.completion_tokens ?? 0);
+      const totalTokens = promptTokens + completionTokens;
       const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
 
-      if (reservedUsd) {
-        const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
-        if (refundUsd > 0) {
-          await adjustBalance(dbUser.id, refundUsd);
-        }
+      // Deduct tokens from subscription
+      if (subscription && totalTokens > 0) {
+        await db.update(apiSubscriptions)
+          .set({ 
+            tokensUsed: sql`${apiSubscriptions.tokensUsed} + ${totalTokens}`,
+            updatedAt: new Date()
+          })
+          .where(eq(apiSubscriptions.id, subscription.id));
       }
 
-      const [balanceRow] = await db.select({ balanceUsd: users.balanceUsd }).from(users).where(eq(users.id, dbUser.id)).limit(1);
-
+      // Log usage
       await db.insert(usageLogs).values({
         userId: dbUser.id,
         apiKeyId: null,
@@ -287,17 +241,10 @@ export async function POST(req: Request) {
         costUsd: toUsdString(actualCostUsd),
       });
 
-      if (reservedUsd) {
-        await db.insert(transactions).values({
-          userId: dbUser.id,
-          type: "usage",
-          amountUsd: toUsdString(actualCostUsd),
-          balanceAfterUsd: balanceRow?.balanceUsd,
-        });
-      }
-
+      const newTokensRemaining = tokensRemaining - BigInt(totalTokens);
       const res = NextResponse.json(json, { status: 200 });
-      res.headers.set("X-Request-Cost", actualCostUsd.toFixed(6));
+      res.headers.set("X-Tokens-Used", String(totalTokens));
+      res.headers.set("X-Tokens-Remaining", String(newTokensRemaining > 0n ? newTokensRemaining : 0n));
       res.headers.set("X-RateLimit-Remaining", String(rl.remaining));
       res.headers.set("X-RateLimit-Reset", String(rl.reset));
       return res;
@@ -350,17 +297,20 @@ export async function POST(req: Request) {
 
           const promptTokens = Number(finalUsage?.prompt_tokens ?? 0);
           const completionTokens = Number(finalUsage?.completion_tokens ?? 0);
+          const totalTokens = promptTokens + completionTokens;
           const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
 
-          if (reservedUsd) {
-            const refundUsd = Math.max(0, reserveUsd - actualCostUsd);
-            if (refundUsd > 0) {
-              await adjustBalance(dbUser.id, refundUsd);
-            }
+          // Deduct tokens from subscription
+          if (subscription && totalTokens > 0) {
+            await db.update(apiSubscriptions)
+              .set({ 
+                tokensUsed: sql`${apiSubscriptions.tokensUsed} + ${totalTokens}`,
+                updatedAt: new Date()
+              })
+              .where(eq(apiSubscriptions.id, subscription.id));
           }
 
-          const [balanceRow] = await db.select({ balanceUsd: users.balanceUsd }).from(users).where(eq(users.id, dbUser.id)).limit(1);
-
+          // Log usage
           await db.insert(usageLogs).values({
             userId: dbUser.id,
             apiKeyId: null,
@@ -369,15 +319,6 @@ export async function POST(req: Request) {
             completionTokens: Number.isFinite(completionTokens) ? completionTokens : 0,
             costUsd: toUsdString(actualCostUsd),
           });
-
-          if (reservedUsd) {
-            await db.insert(transactions).values({
-              userId: dbUser.id,
-              type: "usage",
-              amountUsd: toUsdString(actualCostUsd),
-              balanceAfterUsd: balanceRow?.balanceUsd,
-            });
-          }
         }
       },
     });
@@ -388,8 +329,7 @@ export async function POST(req: Request) {
         "content-type": upstreamRes.headers.get("content-type") ?? "text/event-stream",
         "cache-control": "no-cache, no-transform",
         connection: "keep-alive",
-        "X-Request-Cost": reserveUsd.toFixed(6),
-        "X-Request-Cost-Estimated": "true",
+        "X-Tokens-Remaining": String(tokensRemaining),
         "X-RateLimit-Remaining": String(rl.remaining),
         "X-RateLimit-Reset": String(rl.reset),
       },
