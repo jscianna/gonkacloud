@@ -70,6 +70,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
   const [createdKeyId, setCreatedKeyId] = useState<string | null>(null);
   const [copyOk, setCopyOk] = useState<boolean | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const activeCount = useMemo(() => keys.filter((k) => !k.revokedAt).length, [keys]);
 
@@ -103,6 +104,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
 
       const payload = (await res.json()) as CreateResponse;
       console.log("[api-keys-client] create success", { apiKeyId: payload.apiKey.id });
+      setCreateDialogOpen(false);
       setCreatedFullKey(payload.key);
       setCreatedKeyId(payload.apiKey.id);
       setNewKeyName("");
@@ -132,7 +134,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
           <p className="mt-1 text-sm text-white/50">Create and manage keys for OpenAI-compatible API access.</p>
         </div>
 
-        <Dialog>
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
