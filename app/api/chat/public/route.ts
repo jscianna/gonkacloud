@@ -8,9 +8,9 @@ import { NextResponse } from "next/server";
 
 import { gonkaInference } from "@/lib/gonka/inference";
 
-// Vex wallet - stored server-side for public chat
-const PUBLIC_WALLET_ADDRESS = process.env.PUBLIC_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
-const PUBLIC_WALLET_ENCRYPTED_MNEMONIC = process.env.PUBLIC_WALLET_ENCRYPTED_MNEMONIC;
+// Dogecat wallet - stored server-side for public chat
+const DOGECAT_WALLET_ADDRESS = process.env.DOGECAT_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
+const DOGECAT_WALLET_ENCRYPTED_MNEMONIC = process.env.DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
 
 // Simple in-memory rate limiting by IP (for serverless, use Upstash Redis in production)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -41,8 +41,8 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
 }
 
 export async function POST(req: Request) {
-  // Check if public wallet is configured
-  if (!PUBLIC_WALLET_ENCRYPTED_MNEMONIC) {
+  // Check if dogecat wallet is configured
+  if (!DOGECAT_WALLET_ENCRYPTED_MNEMONIC) {
     return NextResponse.json(
       { error: { message: "Public chat not configured", type: "server_error", code: "not_configured" } },
       { status: 503 }
@@ -74,13 +74,13 @@ export async function POST(req: Request) {
     // Limit conversation length for public chat
     const limitedMessages = messages.slice(-5); // Last 5 messages only
 
-    // Run inference using Vex wallet
+    // Run inference using Dogecat wallet
     const result = await gonkaInference({
       model,
       messages: limitedMessages,
       maxTokens: 500, // Limit tokens for public chat
-      gonkaAddress: PUBLIC_WALLET_ADDRESS,
-      encryptedMnemonic: PUBLIC_WALLET_ENCRYPTED_MNEMONIC,
+      gonkaAddress: DOGECAT_WALLET_ADDRESS,
+      encryptedMnemonic: DOGECAT_WALLET_ENCRYPTED_MNEMONIC,
     });
 
     // Return OpenAI-compatible response
