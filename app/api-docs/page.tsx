@@ -58,13 +58,13 @@ export default async function ApiDocsPage() {
       </section>
 
       {/* Pricing */}
-      <section className="border-b border-white/[0.06] py-16">
-        <div className="mx-auto max-w-5xl px-6">
-          <h2 className="mb-8 text-center text-2xl font-semibold">Simple Pricing</h2>
+      <section className="border-b border-white/[0.06] py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <h2 className="mb-6 sm:mb-8 text-center text-xl sm:text-2xl font-semibold">Simple Pricing</h2>
           
-          <div className="mx-auto grid max-w-3xl gap-6 md:grid-cols-2">
+          <div className="mx-auto grid max-w-3xl gap-4 sm:gap-6 md:grid-cols-2">
             {/* Free Tier */}
-            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6">
+            <div className="flex flex-col rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 sm:p-6">
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-white">Free Preview</h3>
                 <p className="text-sm text-white/50">Try it out on the homepage</p>
@@ -72,30 +72,30 @@ export default async function ApiDocsPage() {
               <div className="mb-6">
                 <span className="text-3xl font-bold text-white">$0</span>
               </div>
-              <ul className="mb-6 space-y-3 text-sm text-white/70">
+              <ul className="mb-6 flex-1 space-y-3 text-sm text-white/70">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   Web chat access
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   Qwen3-235B model
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   Limited daily usage
                 </li>
               </ul>
               <Link 
                 href="/" 
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.06]"
+                className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-sm font-medium text-white transition hover:bg-white/[0.06]"
               >
                 Try Free
               </Link>
             </div>
 
             {/* Pro Tier */}
-            <div className="relative rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent p-6">
+            <div className="relative flex flex-col rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent p-5 sm:p-6">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white">
                 RECOMMENDED
               </div>
@@ -107,37 +107,33 @@ export default async function ApiDocsPage() {
                 <span className="text-3xl font-bold text-white">$2.99</span>
                 <span className="text-white/50">/month</span>
               </div>
-              <ul className="mb-6 space-y-3 text-sm text-white/70">
+              <ul className="mb-6 flex-1 space-y-3 text-sm text-white/70">
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   100M tokens included
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   OpenAI-compatible API
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   Multiple API keys
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-emerald-400" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-400" />
                   Priority support
                 </li>
               </ul>
               <Link 
                 href={userId ? "/dashboard/billing" : "/sign-up"} 
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
+                className="mt-auto flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
               >
                 <CreditCard className="h-4 w-4" />
                 Subscribe Now
               </Link>
             </div>
           </div>
-
-          <p className="mt-6 text-center text-sm text-white/40">
-            Additional tokens: $0.50/1M input, $1.00/1M output
-          </p>
         </div>
       </section>
 
