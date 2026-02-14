@@ -1,20 +1,26 @@
 import Link from "next/link";
 import Image from "next/image";
 import { UserButton } from "@clerk/nextjs";
-import { Menu, Wallet } from "lucide-react";
+import { Menu, Sparkles } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { DashboardNav } from "@/components/layout/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { apiSubscriptions } from "@/lib/db/schema";
+import { eq, and } from "drizzle-orm";
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
+function formatTokens(tokens: bigint | number): string {
+  const n = typeof tokens === 'bigint' ? tokens : BigInt(tokens);
+  if (n >= 1_000_000n) {
+    return `${(Number(n) / 1_000_000).toFixed(1)}M`;
+  }
+  if (n >= 1_000n) {
+    return `${(Number(n) / 1_000).toFixed(0)}K`;
+  }
+  return n.toString();
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -24,8 +30,26 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/sign-in");
   }
 
-  const balance = Number.parseFloat(user.dbUser?.balanceUsd ?? "0");
-  const safeBalance = Number.isFinite(balance) ? balance : 0;
+  // Get subscription and token balance
+  let tokensRemaining = 0n;
+  let hasSubscription = false;
+
+  if (user.dbUser?.id) {
+    const subscription = await db.query.apiSubscriptions.findFirst({
+      where: and(
+        eq(apiSubscriptions.userId, user.dbUser.id),
+        eq(apiSubscriptions.status, "active")
+      ),
+    });
+
+    if (subscription) {
+      hasSubscription = true;
+      const allocated = subscription.tokensAllocated ?? 0n;
+      const used = subscription.tokensUsed ?? 0n;
+      tokensRemaining = allocated - used;
+      if (tokensRemaining < 0n) tokensRemaining = 0n;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0b] text-white">
@@ -70,15 +94,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
 
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-sm font-medium text-white/70 sm:flex">
-                  <Wallet className="h-4 w-4 text-emerald-400" />
-                  <span>{formatCurrency(safeBalance)} remaining</span>
-                </div>
-                <Link href="/dashboard/billing">
-                  <Button className="bg-emerald-500 text-white hover:bg-emerald-400" size="sm">
-                    Add Credits
-                  </Button>
-                </Link>
+                {hasSubscription ? (
+                  <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-sm font-medium text-white/70 sm:flex">
+                    <Sparkles className="h-4 w-4 text-emerald-400" />
+                    <span>{formatTokens(tokensRemaining)} tokens</span>
+                  </div>
+                ) : (
+                  <Link href="/dashboard/billing">
+                    <Button className="bg-emerald-500 text-white hover:bg-emerald-400" size="sm">
+                      Subscribe
+                    </Button>
+                  </Link>
+                )}
                 <UserButton 
                   afterSignOutUrl="/" 
                   appearance={{

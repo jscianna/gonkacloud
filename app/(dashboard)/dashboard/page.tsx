@@ -6,22 +6,45 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { usageLogs } from "@/lib/db/schema";
+import { usageLogs, apiSubscriptions } from "@/lib/db/schema";
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
+function formatTokens(tokens: bigint | number): string {
+  const n = typeof tokens === 'bigint' ? tokens : BigInt(Math.round(Number(tokens)));
+  if (n >= 1_000_000n) {
+    const millions = Number(n) / 1_000_000;
+    return millions >= 10 ? `${Math.round(millions)}M` : `${millions.toFixed(1)}M`;
+  }
+  if (n >= 1_000n) {
+    return `${Math.round(Number(n) / 1_000)}K`;
+  }
+  return n.toString();
 }
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   const email = user?.clerkUser?.emailAddresses[0]?.emailAddress ?? user?.dbUser?.email ?? "there";
-  const balance = Number.parseFloat(user?.dbUser?.balanceUsd ?? "0");
-  const safeBalance = Number.isFinite(balance) ? balance : 0;
+
+  // Get subscription and token balance
+  let tokensRemaining = 0n;
+  let hasSubscription = false;
+
+  if (user?.dbUser?.id) {
+    const subscription = await db.query.apiSubscriptions.findFirst({
+      where: and(
+        eq(apiSubscriptions.userId, user.dbUser.id),
+        eq(apiSubscriptions.status, "active")
+      ),
+    });
+
+    if (subscription) {
+      hasSubscription = true;
+      const allocated = subscription.tokensAllocated ?? 0n;
+      const used = subscription.tokensUsed ?? 0n;
+      tokensRemaining = allocated - used;
+      if (tokensRemaining < 0n) tokensRemaining = 0n;
+    }
+  }
 
   let apiCalls = 0;
   let tokensUsed = 0;
@@ -42,7 +65,7 @@ export default async function DashboardPage() {
     tokensUsed = Number(stats?.tokensUsed ?? 0);
   }
 
-  const balanceColor = safeBalance <= 0 ? "text-amber-400" : "text-emerald-400";
+  const tokenColor = !hasSubscription || tokensRemaining <= 0n ? "text-amber-400" : "text-emerald-400";
 
   return (
     <section className="space-y-6">
@@ -52,51 +75,60 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className="border-white/[0.08] bg-white/[0.02]">
           <CardHeader>
-            <CardDescription>Current Balance</CardDescription>
-            <CardTitle className={`text-3xl ${balanceColor}`}>{formatCurrency(safeBalance)}</CardTitle>
-            {safeBalance <= 0 ? <CardDescription className="text-amber-400/70">Add credits to start.</CardDescription> : null}
+            <CardDescription className="text-white/50">Tokens Remaining</CardDescription>
+            <CardTitle className={`text-3xl ${tokenColor}`}>
+              {hasSubscription ? formatTokens(tokensRemaining) : "—"}
+            </CardTitle>
+            {!hasSubscription && (
+              <CardDescription className="text-amber-400/70">
+                <Link href="/dashboard/billing" className="hover:underline">Subscribe to get started</Link>
+              </CardDescription>
+            )}
+            {hasSubscription && tokensRemaining <= 0n && (
+              <CardDescription className="text-amber-400/70">Out of tokens</CardDescription>
+            )}
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-white/[0.08] bg-white/[0.02]">
           <CardHeader>
-            <CardDescription>API Calls (last 30 days)</CardDescription>
+            <CardDescription className="text-white/50">API Calls (30 days)</CardDescription>
             <CardTitle className="text-3xl text-white">{apiCalls.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="border-white/[0.08] bg-white/[0.02]">
           <CardHeader>
-            <CardDescription>Tokens Used (last 30 days)</CardDescription>
-            <CardTitle className="text-3xl text-white">{tokensUsed.toLocaleString()}</CardTitle>
+            <CardDescription className="text-white/50">Tokens Used (30 days)</CardDescription>
+            <CardTitle className="text-3xl text-white">{formatTokens(tokensUsed)}</CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      <Card>
+      <Card className="border-white/[0.08] bg-white/[0.02]">
         <CardHeader>
-          <CardTitle>Quick Start</CardTitle>
-          <CardDescription>Get moving quickly with API credentials, testing, and docs.</CardDescription>
+          <CardTitle className="text-white">Quick Start</CardTitle>
+          <CardDescription className="text-white/50">Get moving quickly with API credentials, testing, and docs.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Link className={buttonVariants()} href="/dashboard/api-keys">
+          <Link className={buttonVariants({ className: "bg-emerald-500 hover:bg-emerald-400" })} href="/dashboard/api-keys">
             Get API Key
           </Link>
-          <Link className={buttonVariants({ variant: "outline" })} href="/chat">
+          <Link className={buttonVariants({ variant: "outline", className: "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]" })} href="/chat">
             Try Chat
           </Link>
-          <Link className={buttonVariants({ variant: "outline" })} href="/api-docs">
+          <Link className={buttonVariants({ variant: "outline", className: "border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]" })} href="/api-docs">
             API Docs
           </Link>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-white/[0.08] bg-white/[0.02]">
         <CardHeader>
-          <CardTitle>Daily Usage (Last 7 Days)</CardTitle>
-          <CardDescription>Token volume from your latest API activity.</CardDescription>
+          <CardTitle className="text-white">Daily Usage (Last 7 Days)</CardTitle>
+          <CardDescription className="text-white/50">Token volume from your latest API activity.</CardDescription>
         </CardHeader>
         <CardContent>
           <UsageBarChart />

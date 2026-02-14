@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CreditCard, KeyRound, LayoutDashboard, MessageSquare, BarChart3, Wallet, Code2, type LucideIcon } from "lucide-react";
+import { CreditCard, KeyRound, LayoutDashboard, MessageSquare, BarChart3, Code2, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,6 @@ const navItems: NavItem[] = [
   { href: "/dashboard/api-keys", label: "API Keys", icon: KeyRound },
   { href: "/dashboard/usage", label: "Usage", icon: BarChart3 },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
-  { href: "/dashboard/wallet", label: "Wallet", icon: Wallet },
   { href: "/api-docs", label: "API Docs", icon: Code2 },
 ];
 

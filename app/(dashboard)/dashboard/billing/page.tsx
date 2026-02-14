@@ -1,146 +1,192 @@
-import { desc, eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { Check, Sparkles, Zap } from "lucide-react";
+import Link from "next/link";
 
-import { BillingClient } from "@/components/dashboard/billing-client";
-import { GonkaDepositCard } from "@/components/dashboard/gonka-deposit-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { transactions } from "@/lib/db/schema";
+import { apiSubscriptions } from "@/lib/db/schema";
 
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(amount);
+function formatTokens(tokens: bigint | number): string {
+  const n = typeof tokens === 'bigint' ? tokens : BigInt(tokens);
+  if (n >= 1_000_000n) {
+    const millions = Number(n) / 1_000_000;
+    return millions >= 10 ? `${Math.round(millions)}M` : `${millions.toFixed(1)}M`;
+  }
+  if (n >= 1_000n) {
+    return `${Math.round(Number(n) / 1_000)}K`;
+  }
+  return n.toString();
 }
 
-function formatDate(value: Date) {
-  return value.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-}
-
-function typeStyles(type: string) {
-  const t = type.toLowerCase();
-  if (t === "purchase") return "text-emerald-700";
-  if (t === "usage") return "text-rose-700";
-  if (t === "refund") return "text-sky-700";
-  return "text-slate-700";
-}
-
-function typeDelta(type: string, amount: number) {
-  const t = type.toLowerCase();
-  if (t === "purchase") return amount;
-  if (t === "refund") return amount;
-  if (t === "usage") return -amount;
-  return 0;
+function formatDate(date: Date | null): string {
+  if (!date) return "—";
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default async function BillingPage() {
   const user = await getCurrentUser();
+  const email = user?.clerkUser?.emailAddresses[0]?.emailAddress ?? "";
 
-  const email = user?.clerkUser?.emailAddresses[0]?.emailAddress ?? user?.dbUser?.email ?? "";
-  const balance = Number.parseFloat(user?.dbUser?.balanceUsd ?? "0");
-  const safeBalance = Number.isFinite(balance) ? balance : 0;
+  // Get subscription
+  let subscription = null;
+  let tokensAllocated = 0n;
+  let tokensUsed = 0n;
+  let tokensRemaining = 0n;
 
-  const rows = user?.dbUser?.id
-    ? await db
-        .select({
-          id: transactions.id,
-          type: transactions.type,
-          amountUsd: transactions.amountUsd,
-          createdAt: transactions.createdAt,
-        })
-        .from(transactions)
-        .where(eq(transactions.userId, user.dbUser.id))
-        .orderBy(desc(transactions.createdAt))
-    : [];
+  if (user?.dbUser?.id) {
+    subscription = await db.query.apiSubscriptions.findFirst({
+      where: and(
+        eq(apiSubscriptions.userId, user.dbUser.id),
+        eq(apiSubscriptions.status, "active")
+      ),
+    });
 
-  // Running balance backwards from current.
-  let running = safeBalance;
-  const history = rows.map((row) => {
-    const amount = Number.parseFloat(row.amountUsd);
-    const safeAmount = Number.isFinite(amount) ? amount : 0;
+    if (subscription) {
+      tokensAllocated = subscription.tokensAllocated ?? 0n;
+      tokensUsed = subscription.tokensUsed ?? 0n;
+      tokensRemaining = tokensAllocated - tokensUsed;
+      if (tokensRemaining < 0n) tokensRemaining = 0n;
+    }
+  }
 
-    const balanceAfter = running;
-    const delta = typeDelta(row.type, safeAmount);
-    running = running - delta;
-
-    return {
-      ...row,
-      balanceAfter,
-      amount: safeAmount,
-    };
-  });
+  const usagePercent = tokensAllocated > 0n 
+    ? Math.min(100, Math.round(Number(tokensUsed * 100n / tokensAllocated)))
+    : 0;
 
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Billing</h1>
-        <p className="mt-1 text-sm text-slate-600">Manage credits and view transaction history{email ? ` for ${email}` : ""}.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Subscription</h1>
+        <p className="mt-1 text-sm text-white/60">
+          Manage your API subscription{email ? ` for ${email}` : ""}.
+        </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardDescription>Current Balance</CardDescription>
-            <CardTitle className="text-4xl text-slate-900">{formatCurrency(safeBalance)}</CardTitle>
-          </CardHeader>
-        </Card>
+      {subscription ? (
+        // Active subscription view
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Token Balance */}
+          <Card className="border-white/[0.08] bg-white/[0.02]">
+            <CardHeader>
+              <CardDescription className="text-white/50">Tokens Remaining</CardDescription>
+              <CardTitle className="flex items-center gap-3 text-4xl">
+                <Sparkles className="h-8 w-8 text-emerald-400" />
+                <span className="text-white">{formatTokens(tokensRemaining)}</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-white/60">
+                  <span>Used this period</span>
+                  <span>{formatTokens(tokensUsed)} / {formatTokens(tokensAllocated)}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div 
+                    className="h-full bg-emerald-500 transition-all" 
+                    style={{ width: `${usagePercent}%` }} 
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Add Credits</CardTitle>
-            <CardDescription>Purchase prepaid credits to use across the API and chat.</CardDescription>
+          {/* Subscription Info */}
+          <Card className="border-white/[0.08] bg-white/[0.02]">
+            <CardHeader>
+              <CardDescription className="text-white/50">Current Plan</CardDescription>
+              <CardTitle className="text-white">API Access</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">Status</span>
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <Check className="h-4 w-4" />
+                  Active
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">Renews</span>
+                <span className="text-white">{formatDate(subscription.currentPeriodEnd)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-white/60">Price</span>
+                <span className="text-white">$2.99/month</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        // No subscription - show subscribe offer
+        <Card className="border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
+              <Zap className="h-8 w-8 text-emerald-400" />
+            </div>
+            <CardTitle className="text-2xl text-white">Get API Access</CardTitle>
+            <CardDescription className="text-white/60">
+              Subscribe to unlock the full power of dogecat
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <BillingClient />
+          <CardContent className="space-y-6">
+            <div className="mx-auto max-w-md space-y-4">
+              <div className="text-center">
+                <span className="text-4xl font-bold text-white">$2.99</span>
+                <span className="text-white/50">/month</span>
+              </div>
+
+              <ul className="space-y-3 text-sm text-white/70">
+                <li className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                  <span>100 million tokens per month</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                  <span>OpenAI-compatible API</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                  <span>Multiple API keys</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                  <span>Qwen3-235B model access</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                  <span>Priority support</span>
+                </li>
+              </ul>
+
+              <Button className="w-full bg-emerald-500 py-6 text-lg font-semibold text-white hover:bg-emerald-400">
+                Subscribe Now
+              </Button>
+
+              <p className="text-center text-xs text-white/40">
+                Cancel anytime. Unused tokens don&apos;t roll over.
+              </p>
+            </div>
           </CardContent>
         </Card>
-      </div>
+      )}
 
-      <Card>
-        <CardContent className="pt-6">
-          <GonkaDepositCard />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Transaction History</CardTitle>
-          <CardDescription>Date | Type | Amount | Balance After</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Balance After</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {history.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-sm text-slate-500">
-                    No transactions yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                history.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{formatDate(row.createdAt)}</TableCell>
-                    <TableCell className={typeStyles(row.type)}>{row.type}</TableCell>
-                    <TableCell>{formatCurrency(row.amount)}</TableCell>
-                    <TableCell>{formatCurrency(row.balanceAfter)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Out of tokens warning */}
+      {subscription && tokensRemaining === 0n && (
+        <Card className="border-amber-500/30 bg-amber-500/10">
+          <CardContent className="flex items-center justify-between py-4">
+            <div>
+              <p className="font-medium text-amber-200">You&apos;ve used all your tokens</p>
+              <p className="text-sm text-amber-200/70">
+                Your tokens will reset on {formatDate(subscription.currentPeriodEnd)}
+              </p>
+            </div>
+            <Button variant="outline" className="border-amber-500/30 text-amber-200 hover:bg-amber-500/20">
+              Get More Tokens
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </section>
   );
 }
