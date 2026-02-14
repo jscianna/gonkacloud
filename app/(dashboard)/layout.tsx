@@ -30,24 +30,29 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/sign-in");
   }
 
-  // Get subscription and token balance
+  // Get subscription and token balance (fail-safe if table doesn't exist)
   let tokensRemaining = 0n;
   let hasSubscription = false;
 
   if (user.dbUser?.id) {
-    const subscription = await db.query.apiSubscriptions.findFirst({
-      where: and(
-        eq(apiSubscriptions.userId, user.dbUser.id),
-        eq(apiSubscriptions.status, "active")
-      ),
-    });
+    try {
+      const subscription = await db.query.apiSubscriptions.findFirst({
+        where: and(
+          eq(apiSubscriptions.userId, user.dbUser.id),
+          eq(apiSubscriptions.status, "active")
+        ),
+      });
 
-    if (subscription) {
-      hasSubscription = true;
-      const allocated = subscription.tokensAllocated ?? 0n;
-      const used = subscription.tokensUsed ?? 0n;
-      tokensRemaining = allocated - used;
-      if (tokensRemaining < 0n) tokensRemaining = 0n;
+      if (subscription) {
+        hasSubscription = true;
+        const allocated = subscription.tokensAllocated ?? 0n;
+        const used = subscription.tokensUsed ?? 0n;
+        tokensRemaining = allocated - used;
+        if (tokensRemaining < 0n) tokensRemaining = 0n;
+      }
+    } catch (e) {
+      // Table may not exist yet - gracefully continue
+      console.warn("Could not fetch subscription:", e instanceof Error ? e.message : e);
     }
   }
 

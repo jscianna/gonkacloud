@@ -29,25 +29,29 @@ export default async function BillingPage() {
   const user = await getCurrentUser();
   const email = user?.clerkUser?.emailAddresses[0]?.emailAddress ?? "";
 
-  // Get subscription
+  // Get subscription (fail-safe if table doesn't exist)
   let subscription = null;
   let tokensAllocated = 0n;
   let tokensUsed = 0n;
   let tokensRemaining = 0n;
 
   if (user?.dbUser?.id) {
-    subscription = await db.query.apiSubscriptions.findFirst({
-      where: and(
-        eq(apiSubscriptions.userId, user.dbUser.id),
-        eq(apiSubscriptions.status, "active")
-      ),
-    });
+    try {
+      subscription = await db.query.apiSubscriptions.findFirst({
+        where: and(
+          eq(apiSubscriptions.userId, user.dbUser.id),
+          eq(apiSubscriptions.status, "active")
+        ),
+      });
 
-    if (subscription) {
-      tokensAllocated = subscription.tokensAllocated ?? 0n;
-      tokensUsed = subscription.tokensUsed ?? 0n;
-      tokensRemaining = tokensAllocated - tokensUsed;
-      if (tokensRemaining < 0n) tokensRemaining = 0n;
+      if (subscription) {
+        tokensAllocated = subscription.tokensAllocated ?? 0n;
+        tokensUsed = subscription.tokensUsed ?? 0n;
+        tokensRemaining = tokensAllocated - tokensUsed;
+        if (tokensRemaining < 0n) tokensRemaining = 0n;
+      }
+    } catch (e) {
+      console.warn("Could not fetch subscription:", e instanceof Error ? e.message : e);
     }
   }
 
