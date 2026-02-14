@@ -48,7 +48,12 @@ function uid(prefix: string) {
 const STORAGE_CONV = "dogecat_chat_conversations";
 const STORAGE_ACTIVE = "dogecat_chat_active";
 
-export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string }) {
+interface ChatClientProps {
+  initialBalanceUsd?: string;
+  isPublic?: boolean;
+}
+
+export function ChatClient({ initialBalanceUsd, isPublic = false }: ChatClientProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -173,7 +178,8 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
     try {
       const currentConv = conversations.find((c) => c.id === currentActiveId);
 
-      const res = await fetch("/api/chat", {
+      const apiEndpoint = isPublic ? "/api/chat/public" : "/api/chat";
+      const res = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({

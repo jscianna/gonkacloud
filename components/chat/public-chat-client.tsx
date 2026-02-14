@@ -63,7 +63,7 @@ export function PublicChatClient() {
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch("/api/chat/public", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
