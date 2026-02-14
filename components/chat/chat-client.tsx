@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Send, Loader2, Sparkles } from "lucide-react";
+import { ChevronDown, Send, Loader2, Sparkles, Plus } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -25,6 +25,7 @@ type Conversation = {
 };
 
 const MODELS = ["Qwen/Qwen3-235B-A22B-Instruct-2507-FP8"] as const;
+const MODEL_SHORT = "Qwen 235B";
 
 const PRICING: Record<string, { input: number; output: number }> = {
   "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8": { input: 0.5, output: 1.0 },
@@ -186,16 +187,14 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
       });
 
       if (!res.ok || !res.body) {
-        // Try to extract error message
         let errorMessage = "Something went wrong. Please try again.";
         try {
           const errorData = await res.json();
           errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
         } catch {
-          // ignore parse errors
+          // ignore
         }
         
-        // Update the assistant message with the error
         setConversations((prev) =>
           prev.map((c) => {
             if (c.id !== currentActiveId) return c;
@@ -294,26 +293,29 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
         <div className="mx-auto w-full max-w-2xl px-4 py-8">
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center py-20">
-              <Image
-                src="/logo.svg"
-                alt="dogecat"
-                width={80}
-                height={80}
-                className="mb-6 opacity-80"
-              />
-              <h1 className="mb-2 text-2xl font-semibold text-slate-900">dogecat</h1>
-              <p className="text-sm text-slate-500">Decentralized AI inference</p>
+              <div className="relative mb-6">
+                <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-xl" />
+                <Image
+                  src="/logo.svg"
+                  alt="dogecat"
+                  width={72}
+                  height={72}
+                  className="relative rounded-2xl"
+                />
+              </div>
+              <h1 className="mb-2 text-2xl font-semibold text-white">dogecat</h1>
+              <p className="text-sm text-white/40">Decentralized AI inference</p>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
               {active?.messages.map((m) => (
-                <Message key={m.id} role={m.role} content={m.content} />
+                <MessageBubble key={m.id} role={m.role} content={m.content} />
               ))}
 
-              {typing && (
+              {typing && active?.messages[active.messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] px-4 py-3 text-sm text-white/60">
+                    <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
                     <span>Thinking...</span>
                   </div>
                 </div>
@@ -324,12 +326,12 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
       </div>
 
       {/* Input area */}
-      <div className="border-t border-slate-200 bg-white px-4 py-4">
+      <div className="border-t border-white/[0.06] bg-[#0a0a0b] px-4 py-4">
         <div className="mx-auto w-full max-w-2xl">
-          <div className="relative">
+          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03]">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 pr-24 text-sm text-slate-900 placeholder:text-slate-400 focus:border-slate-300 focus:bg-white focus:outline-none"
+              className="w-full resize-none bg-transparent px-4 py-3.5 pr-14 text-sm text-white placeholder:text-white/30 focus:outline-none"
               placeholder="Message dogecat..."
               value={input}
               onChange={(e) => {
@@ -348,28 +350,36 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
               size="sm"
               disabled={sending || !input.trim()}
               onClick={send}
-              className="absolute bottom-2 right-2 h-8 rounded-xl bg-slate-900 px-3 text-white hover:bg-slate-800 disabled:opacity-40"
+              className="absolute bottom-2.5 right-2.5 h-8 w-8 rounded-lg bg-emerald-500 p-0 text-white hover:bg-emerald-400 disabled:opacity-30"
             >
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <div className="relative">
+          <div className="mt-2 flex items-center justify-between text-xs text-white/40">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="h-3 w-3 text-emerald-400" />
                 <select
-                  className="h-6 appearance-none rounded border-0 bg-transparent pr-5 text-xs text-slate-500 focus:outline-none"
+                  className="appearance-none bg-transparent text-white/60 focus:outline-none"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                 >
                   {MODELS.map((m) => (
                     <option key={m} value={m}>
-                      Qwen3-235B
+                      {MODEL_SHORT}
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-0 top-1 h-3 w-3 text-slate-400" />
+                <ChevronDown className="h-3 w-3 text-white/40" />
               </div>
+              <button 
+                onClick={newChat}
+                className="flex items-center gap-1 text-white/50 hover:text-white/70"
+              >
+                <Plus className="h-3 w-3" />
+                New chat
+              </button>
             </div>
             {tokenTotal > 0 && (
               <span>
@@ -378,6 +388,27 @@ export function ChatClient({ initialBalanceUsd }: { initialBalanceUsd: string })
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Dark-themed message component
+function MessageBubble({ role, content }: { role: "user" | "assistant"; content: string }) {
+  const isUser = role === "user";
+
+  if (!content) return null;
+
+  return (
+    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
+      <div
+        className={
+          isUser
+            ? "max-w-[85%] rounded-2xl bg-emerald-500/90 px-4 py-3 text-sm text-white sm:max-w-[75%]"
+            : "max-w-[85%] text-sm text-white/90 sm:max-w-[75%]"
+        }
+      >
+        <Message role={role} content={content} />
       </div>
     </div>
   );

@@ -128,8 +128,8 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">API Keys</h1>
-          <p className="mt-1 text-sm text-slate-600">Create and manage keys for OpenAI-compatible API access.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white">API Keys</h1>
+          <p className="mt-1 text-sm text-white/50">Create and manage keys for OpenAI-compatible API access.</p>
         </div>
 
         <Dialog>
@@ -139,14 +139,14 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
               Create New Key
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="border-white/10 bg-[#141415]">
             <DialogHeader>
-              <DialogTitle>Create new API key</DialogTitle>
-              <DialogDescription>Give it a name so you can recognize it later.</DialogDescription>
+              <DialogTitle className="text-white">Create new API key</DialogTitle>
+              <DialogDescription className="text-white/50">Give it a name so you can recognize it later.</DialogDescription>
             </DialogHeader>
 
             <div className="mt-4 space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="key-name">
+              <label className="text-sm font-medium text-white/70" htmlFor="key-name">
                 Name
               </label>
               <Input
@@ -154,9 +154,10 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
                 placeholder="Production backend"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
+                className="border-white/10 bg-white/[0.03] text-white placeholder:text-white/30"
               />
             </div>
-            {createError ? <p className="mt-3 text-sm text-rose-700">{createError}</p> : null}
+            {createError ? <p className="mt-3 text-sm text-rose-400">{createError}</p> : null}
 
             <DialogFooter>
               <DialogClose asChild>
@@ -171,26 +172,26 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
         </Dialog>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <p className="text-sm font-medium text-slate-700">Keys ({activeCount} active)</p>
+      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+          <p className="text-sm font-medium text-white/70">Keys ({activeCount} active)</p>
         </div>
 
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Key</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Last Used</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-white/[0.06] hover:bg-white/[0.02]">
+              <TableHead className="text-white/50">Name</TableHead>
+              <TableHead className="text-white/50">Key</TableHead>
+              <TableHead className="text-white/50">Created</TableHead>
+              <TableHead className="text-white/50">Last Used</TableHead>
+              <TableHead className="text-white/50">Status</TableHead>
+              <TableHead className="text-right text-white/50">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {keys.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-500">
+              <TableRow className="border-white/[0.06] hover:bg-white/[0.02]">
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-white/40">
                   No API keys yet.
                 </TableCell>
               </TableRow>
@@ -200,17 +201,17 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
                 const displayKey = `${key.keyPrefix}…`;
 
                 return (
-                  <TableRow key={key.id}>
-                    <TableCell className="font-medium text-slate-900">{key.name}</TableCell>
-                    <TableCell className="font-mono text-sm text-slate-700">{displayKey}</TableCell>
-                    <TableCell>{formatDate(key.createdAt)}</TableCell>
-                    <TableCell>{formatDate(key.lastUsedAt)}</TableCell>
+                  <TableRow key={key.id} className="border-white/[0.06] hover:bg-white/[0.02]">
+                    <TableCell className="font-medium text-white">{key.name}</TableCell>
+                    <TableCell className="font-mono text-sm text-white/70">{displayKey}</TableCell>
+                    <TableCell className="text-white/60">{formatDate(key.createdAt)}</TableCell>
+                    <TableCell className="text-white/60">{formatDate(key.lastUsedAt)}</TableCell>
                     <TableCell>
                       <span
                         className={
                           isRevoked
-                            ? "inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600"
-                            : "inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700"
+                            ? "inline-flex rounded-full bg-white/10 px-2 py-1 text-xs font-medium text-white/50"
+                            : "inline-flex rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400"
                         }
                       >
                         {isRevoked ? "Revoked" : "Active"}
@@ -239,13 +240,13 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
                               Revoke
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="border-white/10 bg-[#141415]">
                             <DialogHeader>
-                              <DialogTitle>Revoke API key</DialogTitle>
-                              <DialogDescription>Are you sure? This cannot be undone.</DialogDescription>
+                              <DialogTitle className="text-white">Revoke API key</DialogTitle>
+                              <DialogDescription className="text-white/50">Are you sure? This cannot be undone.</DialogDescription>
                             </DialogHeader>
 
-                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                            <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300">
                               <div className="flex items-start gap-2">
                                 <ShieldAlert className="mt-0.5 h-4 w-4" />
                                 <p>
@@ -282,19 +283,19 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKeyRow[] }) {
       </div>
 
       <Dialog open={Boolean(createdFullKey)} onOpenChange={(open) => (!open ? setCreatedFullKey(null) : null)}>
-        <DialogContent>
+        <DialogContent className="border-white/10 bg-[#141415]">
           <DialogHeader>
-            <DialogTitle>API key created</DialogTitle>
-            <DialogDescription>Copy this key now. You won&apos;t see it again.</DialogDescription>
+            <DialogTitle className="text-white">API key created</DialogTitle>
+            <DialogDescription className="text-white/50">Copy this key now. You won&apos;t see it again.</DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="break-all font-mono text-sm text-slate-900">{createdFullKey}</p>
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+              <p className="break-all font-mono text-sm text-emerald-400">{createdFullKey}</p>
             </div>
 
-            {copyOk === true ? <p className="text-sm text-emerald-700">Copied to clipboard.</p> : null}
-            {copyOk === false ? <p className="text-sm text-rose-700">Copy failed. Please copy manually.</p> : null}
+            {copyOk === true ? <p className="text-sm text-emerald-400">Copied to clipboard.</p> : null}
+            {copyOk === false ? <p className="text-sm text-rose-400">Copy failed. Please copy manually.</p> : null}
           </div>
 
           <DialogFooter>

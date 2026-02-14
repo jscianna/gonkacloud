@@ -28,32 +28,34 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const safeBalance = Number.isFinite(balance) ? balance : 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-[#0a0a0b] text-white">
       <div className="mx-auto flex min-h-screen max-w-7xl">
-        <aside className="hidden w-64 border-r border-slate-200 bg-white px-4 py-6 md:flex md:flex-col">
-          <Link className="mb-8 flex items-center gap-2 px-2" href="/dashboard">
-            <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.svg" width={24} />
+        {/* Sidebar */}
+        <aside className="hidden w-64 border-r border-white/[0.06] bg-[#0a0a0b] px-4 py-6 md:flex md:flex-col">
+          <Link className="mb-8 flex items-center gap-2 px-2" href="/chat">
+            <Image alt="dogecat logo" className="rounded" height={24} src="/logo.svg" width={24} />
             <span className="text-base font-semibold tracking-tight">dogecat</span>
           </Link>
           <DashboardNav />
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+          {/* Header */}
+          <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0a0a0b]/95 backdrop-blur">
             <div className="flex h-16 items-center justify-between px-4 md:px-8">
               <div className="flex items-center gap-2">
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button className="md:hidden" size="sm" variant="outline">
+                    <Button className="md:hidden border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]" size="sm" variant="outline">
                       <Menu className="h-4 w-4" />
                       <span className="sr-only">Open dashboard menu</span>
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-72 p-0">
-                    <div className="border-b border-slate-200 px-6 py-5">
-                      <Link className="flex items-center gap-2" href="/dashboard">
-                        <Image alt="dogecat logo" className="rounded bg-slate-100 p-0.5" height={24} src="/logo.svg" width={24} />
-                        <span className="text-base font-semibold tracking-tight">dogecat</span>
+                  <SheetContent side="left" className="w-72 border-white/[0.06] bg-[#0a0a0b] p-0">
+                    <div className="border-b border-white/[0.06] px-6 py-5">
+                      <Link className="flex items-center gap-2" href="/chat">
+                        <Image alt="dogecat logo" className="rounded" height={24} src="/logo.svg" width={24} />
+                        <span className="text-base font-semibold tracking-tight text-white">dogecat</span>
                       </Link>
                     </div>
                     <div className="p-4">
@@ -68,16 +70,23 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
 
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700 sm:flex">
-                  <Wallet className="h-4 w-4" />
+                <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-sm font-medium text-white/70 sm:flex">
+                  <Wallet className="h-4 w-4 text-emerald-400" />
                   <span>{formatCurrency(safeBalance)} remaining</span>
                 </div>
                 <Link href="/dashboard/billing">
-                  <Button className="bg-emerald-600 text-white hover:bg-emerald-500" size="sm">
+                  <Button className="bg-emerald-500 text-white hover:bg-emerald-400" size="sm">
                     Add Credits
                   </Button>
                 </Link>
-                <UserButton afterSignOutUrl="/" />
+                <UserButton 
+                  afterSignOutUrl="/" 
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-8 w-8"
+                    }
+                  }}
+                />
               </div>
             </div>
           </header>

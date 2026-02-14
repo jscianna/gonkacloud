@@ -10,24 +10,21 @@ import { useMemo, useState } from "react";
 type MessageProps = {
   role: "user" | "assistant" | "system";
   content: string;
+  dark?: boolean;
 };
 
-function CodeBlock({ inline, className, children }: { inline?: boolean; className?: string; children: any }) {
+function CodeBlock({ className, children }: { className?: string; children: any }) {
   const code = useMemo(() => String(children ?? "").replace(/\n$/, ""), [children]);
   const match = /language-(\w+)/.exec(className ?? "");
   const lang = match?.[1] ?? "text";
   const [copied, setCopied] = useState(false);
 
-  if (inline) {
-    return <code className="rounded bg-slate-200/50 px-1.5 py-0.5 font-mono text-[0.85em]">{children}</code>;
-  }
-
   return (
-    <div className="my-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-900">
+    <div className="my-3 overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1b]">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
-        <span className="text-xs font-medium text-white/60">{lang}</span>
+        <span className="text-xs font-medium text-white/50">{lang}</span>
         <button
-          className="flex h-7 items-center rounded px-2 text-xs text-white/60 hover:bg-white/10 hover:text-white"
+          className="flex h-7 items-center rounded px-2 text-xs text-white/50 hover:bg-white/10 hover:text-white"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(code);
@@ -59,56 +56,80 @@ function CodeBlock({ inline, className, children }: { inline?: boolean; classNam
   );
 }
 
-export function Message({ role, content }: MessageProps) {
-  const isUser = role === "user";
-
+export function Message({ role, content, dark = true }: MessageProps) {
   if (!content) return null;
 
   return (
-    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
-      <div
-        className={
-          isUser
-            ? "max-w-[85%] rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white sm:max-w-[75%]"
-            : "max-w-[85%] text-sm text-slate-900 sm:max-w-[75%]"
-        }
-      >
-        <div className={isUser ? "prose prose-sm prose-invert max-w-none" : "prose prose-sm max-w-none prose-slate"}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              code: ({ className, children, ...props }) => (
-                <code {...props} className={`rounded bg-slate-200/50 px-1.5 py-0.5 font-mono text-[0.85em] ${className ?? ""}`}>
-                  {children}
-                </code>
-              ),
-              pre: ({ children }) => {
-                const child = Array.isArray(children) ? children[0] : children;
-                if (!child || typeof child !== "object") {
-                  return <pre>{children}</pre>;
-                }
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        code: ({ className, children, ...props }) => {
+          const isInline = !className;
+          if (isInline) {
+            return (
+              <code 
+                {...props} 
+                className={`rounded bg-white/10 px-1.5 py-0.5 font-mono text-[0.85em] text-emerald-300 ${className ?? ""}`}
+              >
+                {children}
+              </code>
+            );
+          }
+          return (
+            <code {...props} className={className}>
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => {
+          const child = Array.isArray(children) ? children[0] : children;
+          if (!child || typeof child !== "object") {
+            return <pre className="overflow-auto">{children}</pre>;
+          }
 
-                const codeChild = child as any;
-                const className = codeChild.props?.className as string | undefined;
-                const code = codeChild.props?.children;
+          const codeChild = child as any;
+          const className = codeChild.props?.className as string | undefined;
+          const code = codeChild.props?.children;
 
-                return <CodeBlock className={className}>{code}</CodeBlock>;
-              },
-              a: ({ href, children }) => (
-                <a className="text-blue-600 hover:underline" href={href} rel="noreferrer" target="_blank">
-                  {children}
-                </a>
-              ),
-              p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-              ul: ({ children }) => <ul className="mb-3 list-disc pl-4 last:mb-0">{children}</ul>,
-              ol: ({ children }) => <ol className="mb-3 list-decimal pl-4 last:mb-0">{children}</ol>,
-              li: ({ children }) => <li className="mb-1">{children}</li>,
-            }}
+          return <CodeBlock className={className}>{code}</CodeBlock>;
+        },
+        a: ({ href, children }) => (
+          <a 
+            className="text-emerald-400 underline decoration-emerald-400/30 underline-offset-2 hover:decoration-emerald-400" 
+            href={href} 
+            rel="noreferrer" 
+            target="_blank"
           >
-            {content}
-          </ReactMarkdown>
-        </div>
-      </div>
-    </div>
+            {children}
+          </a>
+        ),
+        p: ({ children }) => <p className="mb-3 leading-relaxed last:mb-0">{children}</p>,
+        ul: ({ children }) => <ul className="mb-3 list-disc pl-4 last:mb-0">{children}</ul>,
+        ol: ({ children }) => <ol className="mb-3 list-decimal pl-4 last:mb-0">{children}</ol>,
+        li: ({ children }) => <li className="mb-1">{children}</li>,
+        h1: ({ children }) => <h1 className="mb-3 mt-4 text-xl font-semibold first:mt-0">{children}</h1>,
+        h2: ({ children }) => <h2 className="mb-3 mt-4 text-lg font-semibold first:mt-0">{children}</h2>,
+        h3: ({ children }) => <h3 className="mb-2 mt-3 text-base font-semibold first:mt-0">{children}</h3>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-3 border-l-2 border-emerald-400/50 pl-4 italic text-white/70">
+            {children}
+          </blockquote>
+        ),
+        hr: () => <hr className="my-4 border-white/10" />,
+        table: ({ children }) => (
+          <div className="my-3 overflow-x-auto">
+            <table className="w-full border-collapse text-sm">{children}</table>
+          </div>
+        ),
+        th: ({ children }) => (
+          <th className="border border-white/10 bg-white/5 px-3 py-2 text-left font-semibold">{children}</th>
+        ),
+        td: ({ children }) => (
+          <td className="border border-white/10 px-3 py-2">{children}</td>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   );
 }

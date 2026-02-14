@@ -42,13 +42,13 @@ export default async function DashboardPage() {
     tokensUsed = Number(stats?.tokensUsed ?? 0);
   }
 
-  const balanceColor = safeBalance <= 0 ? "text-amber-600" : "text-emerald-600";
+  const balanceColor = safeBalance <= 0 ? "text-amber-400" : "text-emerald-400";
 
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Welcome back, {email}</h1>
-        <p className="mt-1 text-sm text-slate-600">Your dogecat usage and account health at a glance.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-white">Welcome back</h1>
+        <p className="mt-1 text-sm text-white/50">{email}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -56,21 +56,21 @@ export default async function DashboardPage() {
           <CardHeader>
             <CardDescription>Current Balance</CardDescription>
             <CardTitle className={`text-3xl ${balanceColor}`}>{formatCurrency(safeBalance)}</CardTitle>
-            {safeBalance <= 0 ? <CardDescription>Add credits to start.</CardDescription> : null}
+            {safeBalance <= 0 ? <CardDescription className="text-amber-400/70">Add credits to start.</CardDescription> : null}
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>API Calls (last 30 days)</CardDescription>
-            <CardTitle className="text-3xl text-slate-900">{apiCalls.toLocaleString()}</CardTitle>
+            <CardTitle className="text-3xl text-white">{apiCalls.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader>
             <CardDescription>Tokens Used (last 30 days)</CardDescription>
-            <CardTitle className="text-3xl text-slate-900">{tokensUsed.toLocaleString()}</CardTitle>
+            <CardTitle className="text-3xl text-white">{tokensUsed.toLocaleString()}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -87,8 +87,8 @@ export default async function DashboardPage() {
           <Link className={buttonVariants({ variant: "outline" })} href="/chat">
             Try Chat
           </Link>
-          <Link className={buttonVariants({ variant: "outline" })} href="https://docs.gonka.ai" rel="noreferrer" target="_blank">
-            View Docs
+          <Link className={buttonVariants({ variant: "outline" })} href="/api-docs">
+            API Docs
           </Link>
         </CardContent>
       </Card>
