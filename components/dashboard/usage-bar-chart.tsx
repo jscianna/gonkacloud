@@ -48,18 +48,24 @@ export function UsageBarChart() {
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ left: 0, right: 8, top: 8, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-          <XAxis dataKey="day" stroke="#64748b" tickLine={false} axisLine={false} />
-          <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+          <XAxis dataKey="day" stroke="rgba(255,255,255,0.5)" tickLine={false} axisLine={false} />
+          <YAxis stroke="rgba(255,255,255,0.5)" tickLine={false} axisLine={false} />
           <Tooltip
-            cursor={{ fill: "#f8fafc" }}
-            contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0" }}
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
+            contentStyle={{ 
+              borderRadius: 8, 
+              backgroundColor: "#1e293b",
+              borderColor: "rgba(255,255,255,0.1)",
+              color: "#fff"
+            }}
+            labelStyle={{ color: "rgba(255,255,255,0.7)" }}
             formatter={(value: number | string | undefined, name: string | undefined) => [
               Number(value ?? 0).toLocaleString(),
               name === "tokens" ? "Tokens" : "Calls",
             ]}
           />
-          <Bar dataKey="tokens" fill="#0f172a" radius={[6, 6, 0, 0]} />
+          <Bar dataKey="tokens" fill="#10b981" radius={[6, 6, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
