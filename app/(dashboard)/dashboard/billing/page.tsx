@@ -1,10 +1,12 @@
 import { eq, and } from "drizzle-orm";
 import { Check, Sparkles, Zap } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SubscribeButton } from "@/components/billing/subscribe-button";
+import { SuccessConfetti } from "@/components/billing/success-confetti";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiSubscriptions } from "@/lib/db/schema";
@@ -62,6 +64,10 @@ export default async function BillingPage() {
 
   return (
     <section className="space-y-6">
+      <Suspense fallback={null}>
+        <SuccessConfetti />
+      </Suspense>
+      
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Subscription</h1>
         <p className="mt-1 text-sm text-white/60">
