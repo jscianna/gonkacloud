@@ -38,6 +38,7 @@ export async function GET(req: Request, { params }: RouteParams) {
         id: messages.id,
         role: messages.role,
         content: messages.content,
+        encrypted: messages.encrypted,
         createdAt: messages.createdAt,
       })
       .from(messages)

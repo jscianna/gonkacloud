@@ -1,11 +1,12 @@
 import { relations } from "drizzle-orm";
-import { bigint, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, boolean, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 320 }).notNull().unique(),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
+  pinVerifier: text("pin_verifier"), // Encrypted PIN verifier for E2E encryption
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -115,7 +116,8 @@ export const messages = pgTable("messages", {
     .notNull()
     .references(() => conversations.id, { onDelete: "cascade" }),
   role: varchar("role", { length: 32 }).notNull(), // user, assistant, system
-  content: text("content").notNull(),
+  content: text("content").notNull(), // May be encrypted blob if encrypted=true
+  encrypted: boolean("encrypted").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

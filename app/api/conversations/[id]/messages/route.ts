@@ -35,7 +35,7 @@ export async function POST(req: Request, { params }: RouteParams) {
     }
 
     const body = await req.json();
-    const { role, content } = body;
+    const { role, content, encrypted = false, encryptedTitle } = body;
 
     if (!role || !content) {
       return NextResponse.json({ error: "Role and content are required" }, { status: 400 });
@@ -45,19 +45,22 @@ export async function POST(req: Request, { params }: RouteParams) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
 
-    // Insert message
+    // Insert message (content may be encrypted blob)
     const [message] = await db
       .insert(messages)
       .values({
         conversationId: id,
         role,
         content,
+        encrypted,
       })
       .returning();
 
     // Auto-title: if this is the first user message and title is default, update it
     if (role === "user" && convo.title === "New chat") {
-      const title = content.slice(0, 50) + (content.length > 50 ? "..." : "");
+      // Use encrypted title if provided, otherwise truncate content
+      // Note: if encrypted, we use the encryptedTitle (also encrypted) so we can't read it
+      const title = encryptedTitle || (encrypted ? "Encrypted chat" : content.slice(0, 50) + (content.length > 50 ? "..." : ""));
       await db
         .update(conversations)
         .set({ title, updatedAt: new Date() })
