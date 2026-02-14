@@ -209,22 +209,22 @@ export function ChatClient({ isPublic = false }: ChatClientProps) {
 
       {/* Messages area */}
       <div ref={listRef} className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-2xl px-4 py-8">
+        <div className="mx-auto w-full max-w-2xl px-4 py-4">
           {!hasMessages ? (
-            <div className="flex flex-col items-center justify-center py-20">
-              <div className="relative mb-6">
-                <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-xl" />
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="relative mb-3">
+                <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-2xl" />
                 <Image
                   src="/logo.svg"
                   alt="dogecat"
-                  width={216}
-                  height={216}
+                  width={400}
+                  height={400}
                   className="relative rounded-2xl"
                 />
               </div>
-              <h1 className="mb-2 text-2xl font-semibold text-white">dogecat</h1>
-              <p className="text-sm text-white/40">Private, ephemeral AI chat</p>
-              <p className="mt-2 max-w-xs text-center text-xs text-white/30">
+              <h1 className="mb-2 text-5xl font-semibold text-white">dogecat</h1>
+              <p className="text-2xl text-white/40">Private, ephemeral AI chat</p>
+              <p className="mt-2 max-w-lg text-center text-lg text-white/30">
                 Your conversations are never stored on our servers. 
                 Close this tab and they&apos;re gone forever.
               </p>
