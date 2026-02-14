@@ -302,7 +302,7 @@ export async function gonkaInference(params: {
     const payload = {
       model: params.model,
       messages: params.messages,
-      stream: false,
+      stream: params.stream ?? false,
       temperature: params.temperature,
       max_tokens: params.max_tokens,
     };
