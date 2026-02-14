@@ -232,6 +232,40 @@ print(response.choices[0].message.content)`}
                 </pre>
               </div>
             </div>
+
+            {/* Step 4 - OpenClaw */}
+            <div className="rounded-xl border border-purple-500/20 bg-gradient-to-b from-purple-500/5 to-transparent p-6">
+              <h3 className="mb-3 flex items-center gap-2 font-medium">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/20 text-xs font-bold text-purple-400">4</span>
+                Use with OpenClaw
+              </h3>
+              <p className="mb-4 text-sm text-white/60">
+                Add dogecat as a provider in your OpenClaw config. Works with any OpenClaw agent!
+              </p>
+              
+              <div className="overflow-hidden rounded-xl border border-white/10 bg-[#1a1a1b]">
+                <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
+                  <span className="text-xs font-medium text-white/50">~/.openclaw/config.yaml</span>
+                </div>
+                <pre className="overflow-x-auto p-4 text-sm">
+                  <code className="text-white/80">
+{`providers:
+  dogecat:
+    kind: openai
+    baseUrl: https://dogecat.com/api/v1
+    apiKey: PASTE_YOUR_API_KEY_HERE
+    models:
+      - Qwen/Qwen3-235B-A22B-Instruct-2507-FP8
+
+# Then use it as your default:
+defaultModel: dogecat/Qwen/Qwen3-235B-A22B-Instruct-2507-FP8`}
+                  </code>
+                </pre>
+              </div>
+              <p className="mt-4 text-xs text-white/40">
+                Don&apos;t have OpenClaw? <a href="https://github.com/openclaw/openclaw" target="_blank" rel="noreferrer" className="text-purple-400 hover:text-purple-300">Get it here →</a>
+              </p>
+            </div>
           </div>
         </div>
       </section>
