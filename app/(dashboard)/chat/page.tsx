@@ -10,7 +10,7 @@ export default async function ChatPage() {
   return (
     <ChatClient 
       initialBalanceUsd={`$${Number.parseFloat(balanceUsd).toFixed(2)}`}
-      isLoggedIn={isLoggedIn}
+      isPublic={!isLoggedIn}
     />
   );
 }
