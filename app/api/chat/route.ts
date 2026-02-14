@@ -10,6 +10,10 @@ import { gonkaInference } from "@/lib/gonka/inference";
 import { registerEncryptedMnemonicWallet } from "@/lib/gonka/register";
 import { getBalance } from "@/lib/wallet/gonka";
 
+// Dogecat wallet - fallback for free tier users
+const DOGECAT_WALLET_ADDRESS = process.env.DOGECAT_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
+const DOGECAT_WALLET_ENCRYPTED_MNEMONIC = process.env.DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
+
 class ApiError extends Error {
   status: number;
   type: string;
@@ -119,40 +123,47 @@ export async function POST(req: Request) {
       throw new ApiError(400, "User not provisioned", "invalid_request_error", "user_not_provisioned");
     }
 
-    if (!dbUser.gonkaAddress || !dbUser.encryptedMnemonic) {
-      throw new ApiError(400, "Wallet not provisioned", "invalid_request_error", "wallet_not_provisioned");
-    }
-    if (!dbUser.inferenceRegistered) {
+    // Determine which wallet to use:
+    // - If user has their own wallet with balance, use it
+    // - Otherwise, fall back to Dogecat wallet (free tier)
+    let useWalletAddress = DOGECAT_WALLET_ADDRESS;
+    let useEncryptedMnemonic = DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
+    let usingDogecatWallet = true;
+
+    if (dbUser.gonkaAddress && dbUser.encryptedMnemonic) {
       try {
-        await registerEncryptedMnemonicWallet({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          expectedAddress: dbUser.gonkaAddress,
-        });
-        await db
-          .update(users)
-          .set({
-            inferenceRegistered: true,
-            inferenceRegisteredAt: new Date(),
-          })
-          .where(eq(users.id, dbUser.id));
-      } catch {
-        throw new ApiError(
-          400,
-          "Wallet not registered for inference. Please fund your wallet first.",
-          "invalid_request_error",
-          "wallet_not_registered"
-        );
+        const gonkaBalance = await getBalance(dbUser.gonkaAddress);
+        if (Number(gonkaBalance.ngonka) > 0) {
+          // User has their own funded wallet
+          if (!dbUser.inferenceRegistered) {
+            await registerEncryptedMnemonicWallet({
+              encryptedMnemonic: dbUser.encryptedMnemonic,
+              expectedAddress: dbUser.gonkaAddress,
+            });
+            await db
+              .update(users)
+              .set({
+                inferenceRegistered: true,
+                inferenceRegisteredAt: new Date(),
+              })
+              .where(eq(users.id, dbUser.id));
+          }
+          useWalletAddress = dbUser.gonkaAddress;
+          useEncryptedMnemonic = dbUser.encryptedMnemonic;
+          usingDogecatWallet = false;
+        }
+      } catch (e) {
+        // Fall back to dogecat wallet on any error
+        console.log("Falling back to Dogecat wallet:", e instanceof Error ? e.message : String(e));
       }
     }
-    console.log("User:", dbUser?.id, "Gonka Address:", dbUser?.gonkaAddress);
 
-    const gonkaBalance = await getBalance(dbUser.gonkaAddress);
-    if (Number(gonkaBalance.ngonka) <= 0) {
-      return NextResponse.json(
-        { error: "Insufficient Gonka balance. Please deposit GONKA tokens or add USD credits." },
-        { status: 402 }
-      );
+    // If no Dogecat wallet configured and user has no funded wallet, error
+    if (!useEncryptedMnemonic) {
+      throw new ApiError(400, "No wallet available for inference", "invalid_request_error", "no_wallet");
     }
+
+    console.log("User:", dbUser?.id, "Using wallet:", useWalletAddress, "Dogecat:", usingDogecatWallet);
 
     const reserveUsd = estimateCostUsd(model, messages, typeof maxTokens === "number" ? maxTokens : undefined);
     const useUsdBilling = false; // Future: enable for USD -> GONKA auto-conversion.
@@ -195,8 +206,8 @@ export async function POST(req: Request) {
     console.log("Calling Gonka inference...");
     console.log("Sanitized messages count:", sanitizedMessages.length);
     let upstreamRes = await gonkaInference({
-      encryptedMnemonic: dbUser.encryptedMnemonic,
-      gonkaAddress: dbUser.gonkaAddress,
+      encryptedMnemonic: useEncryptedMnemonic,
+      gonkaAddress: useWalletAddress,
       model,
       messages: sanitizedMessages,
       stream,
@@ -204,11 +215,11 @@ export async function POST(req: Request) {
       max_tokens: maxTokens,
     });
 
-    if (upstreamRes.status === 500) {
+    if (upstreamRes.status === 500 && !usingDogecatWallet) {
       try {
         await registerEncryptedMnemonicWallet({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          expectedAddress: dbUser.gonkaAddress,
+          encryptedMnemonic: useEncryptedMnemonic,
+          expectedAddress: useWalletAddress,
         });
         await db
           .update(users)
@@ -219,8 +230,8 @@ export async function POST(req: Request) {
           .where(eq(users.id, dbUser.id));
 
         upstreamRes = await gonkaInference({
-          encryptedMnemonic: dbUser.encryptedMnemonic,
-          gonkaAddress: dbUser.gonkaAddress,
+          encryptedMnemonic: useEncryptedMnemonic,
+          gonkaAddress: useWalletAddress,
           model,
           messages: sanitizedMessages,
           stream,
