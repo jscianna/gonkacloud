@@ -85,8 +85,10 @@ export async function POST(req: Request) {
 
       // Payment failed
       case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
-        console.log(`[stripe-webhook] Payment failed for subscription ${invoice.subscription}`);
+        const invoice = event.data.object;
+        const subId = (invoice as { subscription?: string | { id: string } }).subscription;
+        const subscriptionId = typeof subId === "string" ? subId : subId?.id;
+        console.log(`[stripe-webhook] Payment failed for subscription ${subscriptionId}`);
         // Could send email notification here
         break;
       }
@@ -174,8 +176,9 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   }
 
   const priceId = subscription.items.data[0]?.price.id;
-  const periodStart = new Date(subscription.current_period_start * 1000);
-  const periodEnd = new Date(subscription.current_period_end * 1000);
+  const sub = subscription as unknown as { current_period_start?: number; current_period_end?: number };
+  const periodStart = new Date((sub.current_period_start ?? 0) * 1000);
+  const periodEnd = new Date((sub.current_period_end ?? 0) * 1000);
 
   console.log(`[stripe-webhook] Provisioning subscription ${subscription.id} for user ${user.id}`);
   
@@ -195,9 +198,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 }
 
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
-  const subscriptionId = typeof invoice.subscription === "string" 
-    ? invoice.subscription 
-    : invoice.subscription?.id;
+  const inv = invoice as unknown as { subscription?: string | { id: string }; billing_reason?: string; period_start?: number; period_end?: number };
+  const subscriptionId = typeof inv.subscription === "string" 
+    ? inv.subscription 
+    : inv.subscription?.id;
 
   if (!subscriptionId) {
     console.log(`[stripe-webhook] Invoice ${invoice.id} has no subscription`);
@@ -205,7 +209,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   }
 
   // Check if this is the first invoice (subscription creation) or a renewal
-  const billingReason = invoice.billing_reason;
+  const billingReason = inv.billing_reason;
   
   if (billingReason === "subscription_create") {
     // First invoice - subscription was just created, provisioning handled by subscription.created
@@ -215,8 +219,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
   if (billingReason === "subscription_cycle") {
     // Renewal - top up tokens
-    const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : new Date();
-    const periodEnd = invoice.period_end ? new Date(invoice.period_end * 1000) : new Date();
+    const periodStart = inv.period_start ? new Date(inv.period_start * 1000) : new Date();
+    const periodEnd = inv.period_end ? new Date(inv.period_end * 1000) : new Date();
 
     console.log(`[stripe-webhook] Renewal for subscription ${subscriptionId}`);
     

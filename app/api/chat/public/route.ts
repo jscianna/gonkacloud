@@ -1,6 +1,6 @@
 /**
  * Public chat endpoint - no auth required
- * Uses the Vex wallet (funded by John) for free inference
+ * Uses the Dogecat wallet (funded) for free inference
  * Rate limited by IP to prevent abuse
  */
 
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { messages, model = "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8" } = body;
+    const { messages, model = "Qwen/Qwen3-235B-A22B-Instruct-2507-FP8", stream = false } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -74,33 +74,49 @@ export async function POST(req: Request) {
     // Limit conversation length for public chat
     const limitedMessages = messages.slice(-5); // Last 5 messages only
 
-    // Run inference using Dogecat wallet
-    const result = await gonkaInference({
+    // Run inference using Dogecat wallet - returns raw Response
+    const upstreamRes = await gonkaInference({
       model,
       messages: limitedMessages,
-      maxTokens: 500, // Limit tokens for public chat
+      max_tokens: 500, // Limit tokens for public chat
+      stream,
       gonkaAddress: DOGECAT_WALLET_ADDRESS,
       encryptedMnemonic: DOGECAT_WALLET_ENCRYPTED_MNEMONIC,
     });
 
-    // Return OpenAI-compatible response
-    return NextResponse.json({
-      id: `chatcmpl-public-${Date.now()}`,
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
-      model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content: result.content,
-          },
-          finish_reason: "stop",
+    // Check for upstream errors
+    if (!upstreamRes.ok) {
+      const errorText = await upstreamRes.text();
+      console.error("[public-chat] Upstream error:", upstreamRes.status, errorText);
+      
+      if (upstreamRes.status === 429 || errorText.includes("rate limit")) {
+        return NextResponse.json(
+          { error: { message: "The network is busy. Please try again in a few minutes.", type: "rate_limit_error", code: "upstream_rate_limited" } },
+          { status: 429 }
+        );
+      }
+      
+      return NextResponse.json(
+        { error: { message: "Inference failed", type: "server_error", code: "upstream_error" } },
+        { status: 502 }
+      );
+    }
+
+    // For streaming, proxy the response directly
+    if (stream) {
+      return new Response(upstreamRes.body, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+          "X-RateLimit-Remaining": String(remaining),
         },
-      ],
-      usage: result.usage,
-    }, {
+      });
+    }
+
+    // For non-streaming, return the JSON response
+    const data = await upstreamRes.json();
+    return NextResponse.json(data, {
       headers: { "X-RateLimit-Remaining": String(remaining) }
     });
 
