@@ -1,16 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { calculateCostUsd, estimateCostUsd, PRICING } from "@/lib/api/pricing";
+import { calculateCostUsd, PRICING } from "@/lib/api/pricing";
 import { rateLimit } from "@/lib/api/rate-limit";
 import { db } from "@/lib/db";
-import { transactions, usageLogs, users, apiSubscriptions } from "@/lib/db/schema";
+import { usageLogs, users, apiSubscriptions } from "@/lib/db/schema";
 import { gonkaInference } from "@/lib/gonka/inference";
-
-// Dogecat wallet - shared backend for all users
-const DOGECAT_WALLET_ADDRESS = process.env.DOGECAT_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
-const DOGECAT_WALLET_ENCRYPTED_MNEMONIC = process.env.DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
 
 class ApiError extends Error {
   status: number;
@@ -33,38 +29,9 @@ function toUsdString(amount: number) {
   return amount.toFixed(6);
 }
 
-async function reserveFunds(userId: string, reserveUsd: number) {
-  const reserve = toUsdString(reserveUsd);
-
-  const [updated] = await db
-    .update(users)
-    .set({ balanceUsd: sql`${users.balanceUsd} - ${reserve}::numeric` })
-    .where(and(eq(users.id, userId), sql`${users.balanceUsd} >= ${reserve}::numeric`))
-    .returning({ balanceUsd: users.balanceUsd });
-
-  return updated ?? null;
-}
-
-async function adjustBalance(userId: string, deltaUsd: number) {
-  const delta = toUsdString(Math.abs(deltaUsd));
-
-  const [updated] = await db
-    .update(users)
-    .set({
-      balanceUsd:
-        deltaUsd >= 0
-          ? sql`${users.balanceUsd} + ${delta}::numeric`
-          : sql`${users.balanceUsd} - ${delta}::numeric`,
-    })
-    .where(eq(users.id, userId))
-    .returning({ balanceUsd: users.balanceUsd });
-
-  return updated ?? null;
-}
-
 export async function POST(req: Request) {
   try {
-    console.log("=== CHAT REQUEST STARTED ===");
+    console.log("=== CHAT REQUEST ===");
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -83,14 +50,11 @@ export async function POST(req: Request) {
       return res;
     }
 
-    const loggedBody = (await req.clone().json().catch(() => null)) as any;
-    console.log("Request body:", loggedBody);
-    const body = loggedBody;
+    const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
       throw new ApiError(400, "Invalid JSON body", "invalid_request_error", "invalid_json");
     }
 
-    // Never trust any client-provided user identifiers.
     const model = String(body.model ?? "");
     const messages = Array.isArray(body.messages) ? body.messages : null;
     const stream = Boolean(body.stream);
@@ -106,24 +70,13 @@ export async function POST(req: Request) {
     }
 
     const [dbUser] = await db
-      .select({
-        id: users.id,
-        balanceUsd: users.balanceUsd,
-        gonkaAddress: users.gonkaAddress,
-        encryptedMnemonic: users.encryptedMnemonic,
-        inferenceRegistered: users.inferenceRegistered,
-      })
+      .select({ id: users.id })
       .from(users)
       .where(eq(users.clerkId, clerkId))
       .limit(1);
 
     if (!dbUser) {
       throw new ApiError(400, "User not provisioned", "invalid_request_error", "user_not_provisioned");
-    }
-
-    // Check Dogecat wallet is configured
-    if (!DOGECAT_WALLET_ENCRYPTED_MNEMONIC) {
-      throw new ApiError(500, "Service not configured", "server_error", "no_backend_wallet");
     }
 
     // Check user's subscription and token balance
@@ -136,12 +89,11 @@ export async function POST(req: Request) {
         ),
       });
     } catch (e) {
-      // Table may not exist yet
       console.warn("Could not fetch subscription:", e instanceof Error ? e.message : e);
     }
 
     if (!subscription) {
-      throw new ApiError(402, "No active subscription. Subscribe to get API access.", "billing_error", "no_subscription");
+      throw new ApiError(402, "No active subscription. Subscribe to get access.", "billing_error", "no_subscription");
     }
 
     const tokensAllocated = subscription.tokensAllocated ?? 0n;
@@ -151,21 +103,17 @@ export async function POST(req: Request) {
     if (tokensRemaining <= 0n) {
       throw new ApiError(
         402,
-        "You've run out of tokens. Please wait for your next billing cycle or upgrade your subscription.",
+        "You've used all your tokens. Wait for your next billing cycle or upgrade.",
         "billing_error",
         "insufficient_tokens"
       );
     }
 
-    console.log("User:", dbUser?.id, "Subscription:", subscription.id, "Tokens remaining:", tokensRemaining.toString());
-
-    // Sanitize messages: remove empty assistant messages and consecutive duplicates
+    // Sanitize messages
     const sanitizedMessages = messages.filter((msg: any, index: number, arr: any[]) => {
-      // Remove messages with empty content
       if (!msg.content || (typeof msg.content === 'string' && msg.content.trim() === '')) {
         return false;
       }
-      // Remove consecutive duplicate user messages
       if (index > 0 && msg.role === 'user' && arr[index - 1]?.role === 'user') {
         const prevContent = typeof arr[index - 1].content === 'string' ? arr[index - 1].content.trim() : '';
         const currContent = typeof msg.content === 'string' ? msg.content.trim() : '';
@@ -180,23 +128,19 @@ export async function POST(req: Request) {
       throw new ApiError(400, "No valid messages provided", "invalid_request_error", "empty_messages");
     }
 
-    console.log("Calling Gonka inference via Dogecat wallet...");
-    console.log("Sanitized messages count:", sanitizedMessages.length);
+    console.log("User:", dbUser.id, "Tokens remaining:", tokensRemaining.toString());
+
     const upstreamRes = await gonkaInference({
-      encryptedMnemonic: DOGECAT_WALLET_ENCRYPTED_MNEMONIC,
-      gonkaAddress: DOGECAT_WALLET_ADDRESS,
       model,
       messages: sanitizedMessages,
       stream,
       temperature,
       max_tokens: maxTokens,
     });
-    console.log("Gonka response status:", upstreamRes.status);
 
     if (!upstreamRes.ok || !upstreamRes.body) {
       const text = await upstreamRes.text().catch(() => "");
       
-      // Handle rate limiting specifically
       if (upstreamRes.status === 429) {
         return NextResponse.json(
           { error: { message: "The network is busy. Please try again in a few minutes.", type: "rate_limit_error", code: "upstream_rate_limited" } },
@@ -222,7 +166,7 @@ export async function POST(req: Request) {
       const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
 
       // Deduct tokens from subscription
-      if (subscription && totalTokens > 0) {
+      if (totalTokens > 0) {
         await db.update(apiSubscriptions)
           .set({ 
             tokensUsed: sql`${apiSubscriptions.tokensUsed} + ${totalTokens}`,
@@ -245,12 +189,10 @@ export async function POST(req: Request) {
       const res = NextResponse.json(json, { status: 200 });
       res.headers.set("X-Tokens-Used", String(totalTokens));
       res.headers.set("X-Tokens-Remaining", String(newTokensRemaining > 0n ? newTokensRemaining : 0n));
-      res.headers.set("X-RateLimit-Remaining", String(rl.remaining));
-      res.headers.set("X-RateLimit-Reset", String(rl.reset));
       return res;
     }
 
-    // Streaming: proxy SSE, capture final usage if present.
+    // Streaming
     const decoder = new TextDecoder();
     let buffer = "";
     let finalUsage: { prompt_tokens?: number; completion_tokens?: number } | null = null;
@@ -300,8 +242,7 @@ export async function POST(req: Request) {
           const totalTokens = promptTokens + completionTokens;
           const actualCostUsd = calculateCostUsd(model, promptTokens, completionTokens);
 
-          // Deduct tokens from subscription
-          if (subscription && totalTokens > 0) {
+          if (totalTokens > 0) {
             await db.update(apiSubscriptions)
               .set({ 
                 tokensUsed: sql`${apiSubscriptions.tokensUsed} + ${totalTokens}`,
@@ -310,7 +251,6 @@ export async function POST(req: Request) {
               .where(eq(apiSubscriptions.id, subscription.id));
           }
 
-          // Log usage
           await db.insert(usageLogs).values({
             userId: dbUser.id,
             apiKeyId: null,
@@ -323,24 +263,20 @@ export async function POST(req: Request) {
       },
     });
 
-    const res = new NextResponse(readable, {
+    return new NextResponse(readable, {
       status: 200,
       headers: {
         "content-type": upstreamRes.headers.get("content-type") ?? "text/event-stream",
         "cache-control": "no-cache, no-transform",
         connection: "keep-alive",
         "X-Tokens-Remaining": String(tokensRemaining),
-        "X-RateLimit-Remaining": String(rl.remaining),
-        "X-RateLimit-Reset": String(rl.reset),
       },
     });
-
-    return res;
   } catch (error: any) {
-    console.error("=== CHAT ERROR ===");
-    console.error("Error name:", error?.name);
-    console.error("Error message:", error?.message);
-    console.error("Error stack:", error?.stack);
-    return NextResponse.json({ error: error?.message ?? "Internal server error" }, { status: 500 });
+    console.error("=== CHAT ERROR ===", error?.message);
+    if (error instanceof ApiError) {
+      return jsonError(error);
+    }
+    return NextResponse.json({ error: { message: "Internal server error", type: "server_error", code: "internal_error" } }, { status: 500 });
   }
 }

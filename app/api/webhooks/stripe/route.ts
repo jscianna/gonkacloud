@@ -1,16 +1,12 @@
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
 import { db } from "@/lib/db";
-import { transactions, users } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 import { cancelSubscription, provisionSubscriber, topUpSubscription } from "@/lib/subscription/provision";
-
-function centsToUsdString(cents: number) {
-  return (cents / 100).toFixed(2);
-}
 
 export async function POST(req: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -40,56 +36,35 @@ export async function POST(req: Request) {
 
   try {
     switch (event.type) {
-      // One-time payment completed (credit purchase)
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        // Check if this is a subscription or one-time payment
-        if (session.mode === "subscription") {
-          // Subscription - handled by customer.subscription.created
-          console.log(`[stripe-webhook] Subscription checkout completed, subscription will be handled separately`);
-        } else {
-          // One-time credit purchase
-          await handleCreditPurchase(session);
-        }
-        break;
-      }
-
-      // Subscription created (new subscriber)
       case "customer.subscription.created": {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionCreated(subscription);
         break;
       }
 
-      // Invoice paid (initial or renewal)
       case "invoice.paid": {
         const invoice = event.data.object as Stripe.Invoice;
         await handleInvoicePaid(invoice);
         break;
       }
 
-      // Subscription canceled
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionCanceled(subscription);
         break;
       }
 
-      // Subscription updated (plan change, etc.)
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
         await handleSubscriptionUpdated(subscription);
         break;
       }
 
-      // Payment failed
       case "invoice.payment_failed": {
         const invoice = event.data.object;
         const subId = (invoice as { subscription?: string | { id: string } }).subscription;
         const subscriptionId = typeof subId === "string" ? subId : subId?.id;
         console.log(`[stripe-webhook] Payment failed for subscription ${subscriptionId}`);
-        // Could send email notification here
         break;
       }
 
@@ -98,64 +73,9 @@ export async function POST(req: Request) {
     }
   } catch (error) {
     console.error(`[stripe-webhook] Error handling ${event.type}:`, error);
-    // Return 200 to prevent Stripe from retrying
-    // The error is logged and can be investigated
   }
 
   return NextResponse.json({ ok: true }, { status: 200 });
-}
-
-async function handleCreditPurchase(session: Stripe.Checkout.Session) {
-  const amountTotal = session.amount_total;
-  const userId = session.client_reference_id ?? session.metadata?.userId;
-
-  if (!amountTotal || amountTotal <= 0 || !userId) {
-    console.log(`[stripe-webhook] Skipping credit purchase: missing amount or userId`);
-    return;
-  }
-
-  const stripePaymentId =
-    (typeof session.payment_intent === "string" ? session.payment_intent : null) ?? session.id ?? null;
-
-  // Idempotency: if we already recorded this payment, do nothing.
-  if (stripePaymentId) {
-    const [existing] = await db
-      .select({ id: transactions.id })
-      .from(transactions)
-      .where(eq(transactions.stripePaymentId, stripePaymentId))
-      .limit(1);
-
-    if (existing) {
-      console.log(`[stripe-webhook] Payment ${stripePaymentId} already recorded`);
-      return;
-    }
-  }
-
-  const amountUsd = centsToUsdString(amountTotal);
-
-  // Atomically add credits.
-  const [updated] = await db
-    .update(users)
-    .set({
-      balanceUsd: sql`${users.balanceUsd} + ${amountUsd}::numeric`,
-    })
-    .where(eq(users.id, userId))
-    .returning({ balanceUsd: users.balanceUsd });
-
-  if (!updated) {
-    console.log(`[stripe-webhook] User ${userId} not found for credit purchase`);
-    return;
-  }
-
-  await db.insert(transactions).values({
-    userId,
-    type: "purchase",
-    amountUsd,
-    balanceAfterUsd: updated.balanceUsd,
-    stripePaymentId,
-  });
-
-  console.log(`[stripe-webhook] Added ${amountUsd} credits to user ${userId}`);
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
@@ -163,7 +83,6 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     ? subscription.customer 
     : subscription.customer.id;
   
-  // Find user by Stripe customer ID
   const [user] = await db
     .select()
     .from(users)
@@ -191,7 +110,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   );
 
   if (result.success) {
-    console.log(`[stripe-webhook] Successfully provisioned: address=${result.gonkaAddress}, txHash=${result.txHash}`);
+    console.log(`[stripe-webhook] Successfully provisioned subscription for user ${user.id}`);
   } else {
     console.error(`[stripe-webhook] Provision failed: ${result.error}`);
   }
@@ -208,17 +127,14 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     return;
   }
 
-  // Check if this is the first invoice (subscription creation) or a renewal
   const billingReason = inv.billing_reason;
   
   if (billingReason === "subscription_create") {
-    // First invoice - subscription was just created, provisioning handled by subscription.created
-    console.log(`[stripe-webhook] First invoice for subscription ${subscriptionId}, skipping (handled by subscription.created)`);
+    console.log(`[stripe-webhook] First invoice for subscription ${subscriptionId}, skipping`);
     return;
   }
 
   if (billingReason === "subscription_cycle") {
-    // Renewal - top up tokens
     const periodStart = inv.period_start ? new Date(inv.period_start * 1000) : new Date();
     const periodEnd = inv.period_end ? new Date(inv.period_end * 1000) : new Date();
 
@@ -227,9 +143,9 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     const result = await topUpSubscription(subscriptionId, periodStart, periodEnd);
     
     if (result.success) {
-      console.log(`[stripe-webhook] Top-up successful: txHash=${result.txHash}`);
+      console.log(`[stripe-webhook] Token reset successful for subscription ${subscriptionId}`);
     } else {
-      console.error(`[stripe-webhook] Top-up failed: ${result.error}`);
+      console.error(`[stripe-webhook] Token reset failed: ${result.error}`);
     }
   }
 }
@@ -244,7 +160,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   
   if (status === "past_due" || status === "unpaid") {
     console.log(`[stripe-webhook] Subscription ${subscription.id} is ${status}`);
-    // Could disable API access here
   }
   
   if (status === "active") {

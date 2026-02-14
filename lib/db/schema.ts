@@ -1,17 +1,11 @@
 import { relations } from "drizzle-orm";
-import { bigint, boolean, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { bigint, decimal, integer, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   clerkId: varchar("clerk_id", { length: 255 }).notNull().unique(),
   email: varchar("email", { length: 320 }).notNull().unique(),
-  balanceUsd: decimal("balance_usd", { precision: 12, scale: 4 }).notNull().default("0"),
   stripeCustomerId: varchar("stripe_customer_id", { length: 255 }).unique(),
-  gonkaAddress: varchar("gonka_address", { length: 255 }),
-  encryptedPrivateKey: text("encrypted_private_key"),
-  encryptedMnemonic: text("encrypted_mnemonic"),
-  inferenceRegistered: boolean("inference_registered").notNull().default(false),
-  inferenceRegisteredAt: timestamp("inference_registered_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -53,7 +47,7 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// New: API Subscriptions for token-based billing
+// API Subscriptions for token-based billing
 export const apiSubscriptions = pgTable("api_subscriptions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id")
@@ -71,28 +65,11 @@ export const apiSubscriptions = pgTable("api_subscriptions", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-// Token transfers (sending GONKA to user wallets)
-export const tokenTransfers = pgTable("token_transfers", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  subscriptionId: uuid("subscription_id").references(() => apiSubscriptions.id, { onDelete: "set null" }),
-  fromAddress: varchar("from_address", { length: 255 }).notNull(),
-  toAddress: varchar("to_address", { length: 255 }).notNull(),
-  amountNgonka: varchar("amount_ngonka", { length: 64 }).notNull(),
-  txHash: varchar("tx_hash", { length: 255 }),
-  status: varchar("status", { length: 32 }).notNull().default("pending"), // pending, success, failed
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const usersRelations = relations(users, ({ many, one }) => ({
   apiKeys: many(apiKeys),
   usageLogs: many(usageLogs),
   transactions: many(transactions),
   subscription: one(apiSubscriptions),
-  tokenTransfers: many(tokenTransfers),
 }));
 
 export const apiKeysRelations = relations(apiKeys, ({ one, many }) => ({
@@ -114,21 +91,9 @@ export const usageLogsRelations = relations(usageLogs, ({ one }) => ({
   }),
 }));
 
-export const apiSubscriptionsRelations = relations(apiSubscriptions, ({ one, many }) => ({
+export const apiSubscriptionsRelations = relations(apiSubscriptions, ({ one }) => ({
   user: one(users, {
     fields: [apiSubscriptions.userId],
     references: [users.id],
-  }),
-  tokenTransfers: many(tokenTransfers),
-}));
-
-export const tokenTransfersRelations = relations(tokenTransfers, ({ one }) => ({
-  user: one(users, {
-    fields: [tokenTransfers.userId],
-    references: [users.id],
-  }),
-  subscription: one(apiSubscriptions, {
-    fields: [tokenTransfers.subscriptionId],
-    references: [apiSubscriptions.id],
   }),
 }));

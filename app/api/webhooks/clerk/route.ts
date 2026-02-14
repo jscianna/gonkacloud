@@ -4,7 +4,6 @@ import { Webhook } from "svix";
 
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { createGonkaWallet } from "@/lib/gonka/wallet";
 
 type ClerkUserCreatedPayload = {
   id: string;
@@ -17,7 +16,7 @@ type ClerkWebhookEvent = {
 };
 
 export async function POST(req: Request) {
-  console.log("=== CLERK WEBHOOK RECEIVED ===");
+  console.log("=== CLERK WEBHOOK ===");
 
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
@@ -59,38 +58,23 @@ export async function POST(req: Request) {
     console.log("Creating user:", clerkId, email);
 
     try {
-      console.log("Generating wallet...");
-      const wallet = await createGonkaWallet(clerkId);
-      console.log("Wallet generated:", wallet.address);
-
       await db
         .insert(users)
         .values({
           id: crypto.randomUUID(),
           clerkId,
           email,
-          balanceUsd: "0.00",
-          gonkaAddress: wallet.address,
-          encryptedPrivateKey: wallet.encryptedPrivateKey,
-          encryptedMnemonic: wallet.encryptedMnemonic,
-          inferenceRegistered: false, // Will register lazily on first inference
         })
         .onConflictDoUpdate({
           target: users.clerkId,
-          set: {
-            email,
-            gonkaAddress: wallet.address,
-            encryptedPrivateKey: wallet.encryptedPrivateKey,
-            encryptedMnemonic: wallet.encryptedMnemonic,
-            inferenceRegistered: false,
-          },
+          set: { email },
         });
 
-      console.log("User created with wallet");
+      console.log("User created");
     } catch (err) {
       console.error("Error creating user:", err instanceof Error ? err.message : String(err));
       return NextResponse.json(
-        { error: err instanceof Error ? err.message : "Failed to create user and wallet" },
+        { error: err instanceof Error ? err.message : "Failed to create user" },
         { status: 500 }
       );
     }

@@ -2,7 +2,6 @@ import { Bip39, EnglishMnemonic, Slip10, Slip10Curve, stringToPath } from "@cosm
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
 import { toHex } from "@cosmjs/encoding";
 
-import { decrypt } from "@/lib/wallet/kms";
 import { signGonkaRequest } from "@/lib/gonka/sign";
 
 const PARTICIPANT_BOOTSTRAP_NODES = ["http://node1.gonka.ai:8000", "http://node2.gonka.ai:8000"];
@@ -11,16 +10,22 @@ const PROVIDER_FETCH_TIMEOUT_MS = 30_000;
 const INFERENCE_FETCH_TIMEOUT_MS = 120_000;
 const CLOCK_SKEW_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MAX_RETRIES = 3;
-const INITIAL_RETRY_DELAY_MS = 5000; // 5 seconds, doubles each retry (5s, 10s, 20s)
+const INITIAL_RETRY_DELAY_MS = 5000;
+
+// Shared wallet configuration
+const GONKA_MNEMONIC = process.env.GONKA_MNEMONIC;
+const GONKA_WALLET_ADDRESS = process.env.GONKA_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
 
 // Clock skew cache
 let cachedClockSkewMs: number | null = null;
 let clockSkewCachedAt = 0;
 
+// Cached wallet derivation
+let cachedPrivateKeyHex: string | null = null;
+let cachedWalletAddress: string | null = null;
+
 /**
  * Get clock skew between local time and Gonka chain.
- * Gonka nodes can be ~30+ minutes behind real time.
- * Returns milliseconds to SUBTRACT from local Date.now().
  */
 async function getClockSkew(): Promise<number> {
   const now = Date.now();
@@ -46,9 +51,8 @@ async function getClockSkew(): Promise<number> {
     }
 
     const nodeTime = new Date(blockTimeStr).getTime();
-    const localTime = (localBefore + localAfter) / 2; // Account for RTT
+    const localTime = (localBefore + localAfter) / 2;
 
-    // Positive skew = local is ahead of node
     cachedClockSkewMs = localTime - nodeTime;
     clockSkewCachedAt = Date.now();
 
@@ -59,6 +63,7 @@ async function getClockSkew(): Promise<number> {
     return cachedClockSkewMs ?? 0;
   }
 }
+
 const ALLOWED_TRANSFER_AGENTS = [
   "gonka1y2a9p56kv044327uycmqdexl7zs82fs5ryv5le",
   "gonka1dkl4mah5erqggvhqkpc8j3qs5tyuetgdy552cp",
@@ -68,13 +73,6 @@ const ALLOWED_TRANSFER_AGENTS = [
   "gonka1v8gk5z7gcv72447yfcd2y8g78qk05yc4f3nk4w",
   "gonka1gndhek2h2y5849wf6tmw6gnw9qn4vysgljed0u",
 ];
-
-function requireGonkaAddress(addr: string | null | undefined) {
-  if (!addr || typeof addr !== "string") {
-    throw new Error("Missing gonkaAddress");
-  }
-  return addr;
-}
 
 type SelectedProvider = {
   providerTransferAddress: string;
@@ -95,7 +93,6 @@ function getProviderWeight(provider: any): number {
 }
 
 async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
-  // Try epochs API first, fallback to main participants API
   const endpointsToTry = [
     `${nodeUrl}/v1/epochs/current/participants`,
     `${nodeUrl}/api/v1/participants`,
@@ -117,9 +114,7 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
       }
 
       const data = (await participantsRes.json()) as any;
-      console.log("Participants response keys:", Object.keys(data ?? {}));
 
-      // Handle different response formats
       const list =
         data?.active_participants?.participants ||
         data?.participants ||
@@ -129,7 +124,6 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
 
       if (Array.isArray(list)) {
         const eligible = list.filter((p: any) => {
-          // Support both "index" and "id" field names
           const address = String(p?.index || p?.id || "");
           const inferenceUrl = String(p?.inference_url || p?.inferenceUrl || p?.url || "");
           return ALLOWED_TRANSFER_AGENTS.includes(address) && Boolean(inferenceUrl);
@@ -141,16 +135,8 @@ async function getProvider(nodeUrl: string): Promise<SelectedProvider> {
           const providerTransferAddress = String(provider.index || provider.id || "");
           const inferenceUrl = String(provider.inference_url || provider.inferenceUrl || provider.url || "").replace(/\/$/, "");
 
-          console.log(
-            "Provider candidate count:",
-            eligible.length,
-            "selected weight:",
-            getProviderWeight(provider)
-          );
-
           if (providerTransferAddress && inferenceUrl) {
             console.log("Selected provider:", providerTransferAddress);
-            console.log("Selected provider inference_url:", inferenceUrl);
             return { providerTransferAddress, inferenceUrl };
           }
         }
@@ -169,7 +155,6 @@ async function getProviderWithFallback(): Promise<SelectedProvider> {
 
   for (const nodeUrl of PARTICIPANT_BOOTSTRAP_NODES) {
     try {
-      console.log("Trying participant bootstrap node:", nodeUrl);
       return await getProvider(nodeUrl);
     } catch (error) {
       lastError = error;
@@ -184,9 +169,6 @@ async function getProviderWithFallback(): Promise<SelectedProvider> {
   );
 }
 
-/**
- * Get all eligible providers for rotation on rate limits.
- */
 async function getAllProviders(nodeUrl: string): Promise<SelectedProvider[]> {
   const endpointsToTry = [
     `${nodeUrl}/v1/epochs/current/participants`,
@@ -216,7 +198,6 @@ async function getAllProviders(nodeUrl: string): Promise<SelectedProvider[]> {
           return ALLOWED_TRANSFER_AGENTS.includes(address) && Boolean(inferenceUrl);
         });
 
-        // Sort by weight descending
         const ranked = eligible.sort((a: any, b: any) => getProviderWeight(b) - getProviderWeight(a));
         
         return ranked.map((provider: any) => ({
@@ -232,193 +213,169 @@ async function getAllProviders(nodeUrl: string): Promise<SelectedProvider[]> {
   return [];
 }
 
-/**
- * Sleep helper for retry delays.
- */
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function derivePrivateKeyHexFromMnemonic(mnemonic: string): Promise<string> {
-  // Cosmos standard HD path
+async function getWalletCredentials(): Promise<{ privateKeyHex: string; address: string }> {
+  // Return cached if available
+  if (cachedPrivateKeyHex && cachedWalletAddress) {
+    return { privateKeyHex: cachedPrivateKeyHex, address: cachedWalletAddress };
+  }
+
+  if (!GONKA_MNEMONIC) {
+    throw new Error("GONKA_MNEMONIC is not set");
+  }
+
   const hdPath = stringToPath("m/44'/1200'/0'/0/0");
-  const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(mnemonic));
+  const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(GONKA_MNEMONIC));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
-  return toHex(privkey);
+
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(GONKA_MNEMONIC, { prefix: "gonka" });
+  const accounts = await wallet.getAccounts();
+  
+  if (!accounts[0]) {
+    throw new Error("Failed to derive wallet account");
+  }
+
+  cachedPrivateKeyHex = toHex(privkey);
+  cachedWalletAddress = accounts[0].address;
+
+  return { privateKeyHex: cachedPrivateKeyHex, address: cachedWalletAddress };
 }
 
 type GonkaChatMessage = { role: string; content: string };
 
+/**
+ * Run inference on Gonka network using the shared wallet.
+ */
 export async function gonkaInference(params: {
-  encryptedMnemonic: string;
-  gonkaAddress: string;
   model: string;
   messages: Array<GonkaChatMessage>;
   stream?: boolean;
   temperature?: number;
   max_tokens?: number;
 }): Promise<Response> {
-  console.log("=== GONKA INFERENCE DEBUG ===");
-  let mnemonic: string | null = null;
+  console.log("=== GONKA INFERENCE ===");
 
-  try {
-    console.log("Step: decrypt mnemonic");
-    mnemonic = await decrypt(params.encryptedMnemonic);
+  const { privateKeyHex, address } = await getWalletCredentials();
+  console.log("Using wallet:", address);
 
-    // Restore wallet and ensure mnemonic/account are valid.
-    console.log("Step: restore wallet from mnemonic");
-    const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: "gonka" });
-    console.log("Step: read wallet accounts");
-    const accounts = await wallet.getAccounts();
-    if (!accounts[0]) {
-      throw new Error("Failed to derive wallet account");
+  // Get all available providers for rotation on rate limits
+  let allProviders: SelectedProvider[] = [];
+  for (const nodeUrl of PARTICIPANT_BOOTSTRAP_NODES) {
+    try {
+      allProviders = await getAllProviders(nodeUrl);
+      if (allProviders.length > 0) break;
+    } catch (e) {
+      console.warn("Failed to get providers from:", nodeUrl);
+    }
+  }
+
+  if (allProviders.length === 0) {
+    const singleProvider = await getProviderWithFallback();
+    allProviders = [singleProvider];
+  }
+
+  console.log("Available providers:", allProviders.length);
+
+  const payload = {
+    model: params.model,
+    messages: params.messages,
+    stream: params.stream ?? false,
+    temperature: params.temperature,
+    max_tokens: params.max_tokens,
+  };
+
+  const payloadJson = JSON.stringify(payload);
+
+  // Get clock skew once
+  const clockSkewMs = await getClockSkew();
+
+  // Retry loop with provider rotation
+  let lastError: Error | null = null;
+  let providerIndex = 0;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const provider = allProviders[providerIndex % allProviders.length];
+    const providerTransferAddress = provider.providerTransferAddress;
+
+    // Fresh timestamp for each attempt
+    const adjustedTimeMs = Math.floor(Date.now() - clockSkewMs);
+    const timestampNs = BigInt(adjustedTimeMs) * 1_000_000n;
+    
+    if (attempt > 0) {
+      console.log(`Retry attempt ${attempt + 1}/${MAX_RETRIES} with provider: ${providerTransferAddress}`);
     }
 
-    // Private key must exist in memory only for signing.
-    console.log("Step: derive private key hex");
-    const privateKeyHex = await derivePrivateKeyHexFromMnemonic(mnemonic);
+    const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
 
-    // Get all available providers for rotation on rate limits
-    console.log("Step: fetch providers for rotation");
-    let allProviders: SelectedProvider[] = [];
-    for (const nodeUrl of PARTICIPANT_BOOTSTRAP_NODES) {
-      try {
-        allProviders = await getAllProviders(nodeUrl);
-        if (allProviders.length > 0) break;
-      } catch (e) {
-        console.warn("Failed to get providers from:", nodeUrl);
-      }
-    }
+    const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
+    console.log("Target URL:", targetUrl);
 
-    // Fallback to single provider if getAllProviders fails
-    if (allProviders.length === 0) {
-      console.log("Falling back to single provider");
-      const singleProvider = await getProviderWithFallback();
-      allProviders = [singleProvider];
-    }
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), INFERENCE_FETCH_TIMEOUT_MS);
 
-    console.log("Available providers:", allProviders.length);
-
-    const payload = {
-      model: params.model,
-      messages: params.messages,
-      stream: params.stream ?? false,
-      temperature: params.temperature,
-      max_tokens: params.max_tokens,
-    };
-
-    const payloadJson = JSON.stringify(payload);
-    requireGonkaAddress(params.gonkaAddress);
-
-    // Get clock skew once
-    console.log("Step: get clock skew");
-    const clockSkewMs = await getClockSkew();
-
-    // Retry loop with provider rotation
-    let lastError: Error | null = null;
-    let providerIndex = 0;
-
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      const provider = allProviders[providerIndex % allProviders.length];
-      const providerTransferAddress = provider.providerTransferAddress;
-
-      // Fresh timestamp for each attempt
-      const adjustedTimeMs = Math.floor(Date.now() - clockSkewMs);
-      const timestampNs = BigInt(adjustedTimeMs) * 1_000_000n;
-      
-      if (attempt > 0) {
-        console.log(`Retry attempt ${attempt + 1}/${MAX_RETRIES} with provider: ${providerTransferAddress}`);
-      } else {
-        console.log("Adjusted timestamp (ms):", adjustedTimeMs, "Skew:", clockSkewMs);
-      }
-
-      const signature = signGonkaRequest(payloadJson, privateKeyHex, timestampNs, providerTransferAddress);
-
-      const targetUrl = `${provider.inferenceUrl}/v1/chat/completions`;
-      console.log("Target URL:", targetUrl);
-      console.log("Provider transferAddress:", providerTransferAddress);
-
-      console.log("Gonka inference URL:", provider.inferenceUrl);
-      console.log("Gonka inference headers:", {
-        Authorization: `${signature.substring(0, 20)}...`,
-        "X-Requester-Address": params.gonkaAddress,
-        "X-Timestamp": timestampNs.toString(),
+    try {
+      const res = await fetch(targetUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: signature,
+          "x-requester-address": address,
+          "x-timestamp": timestampNs.toString(),
+        },
+        body: payloadJson,
+        signal: controller.signal,
       });
 
-      console.log("Step: send inference request");
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), INFERENCE_FETCH_TIMEOUT_MS);
+      clearTimeout(timeoutId);
 
-      try {
-        const res = await fetch(targetUrl, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            authorization: signature,
-            "x-requester-address": params.gonkaAddress,
-            "x-timestamp": timestampNs.toString(),
-          },
-          body: payloadJson,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        // Check for rate limit
-        if (res.status === 429) {
-          const retryAfter = res.headers.get("retry-after");
-          const delayMs = retryAfter 
-            ? parseInt(retryAfter, 10) * 1000 
-            : INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
-          
-          console.warn(`Rate limited (429) by ${provider.inferenceUrl}. Retrying in ${delayMs}ms...`);
-          
-          // Rotate to next provider
-          providerIndex++;
-          
-          if (attempt < MAX_RETRIES - 1) {
-            await sleep(delayMs);
-            continue;
-          }
-        }
-
-        // Check for server errors (5xx) - also retry
-        if (res.status >= 500 && res.status < 600) {
-          const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
-          console.warn(`Server error (${res.status}) from ${provider.inferenceUrl}. Retrying in ${delayMs}ms...`);
-          
-          providerIndex++;
-          
-          if (attempt < MAX_RETRIES - 1) {
-            await sleep(delayMs);
-            continue;
-          }
-        }
-
-        console.log("Gonka response status:", res.status);
-        return res;
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        lastError = err instanceof Error ? err : new Error(String(err));
-        console.error("Fetch error:", lastError.message);
+      // Check for rate limit
+      if (res.status === 429) {
+        const retryAfter = res.headers.get("retry-after");
+        const delayMs = retryAfter 
+          ? parseInt(retryAfter, 10) * 1000 
+          : INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
         
-        // Rotate provider on network errors too
+        console.warn(`Rate limited (429). Retrying in ${delayMs}ms...`);
         providerIndex++;
         
         if (attempt < MAX_RETRIES - 1) {
-          const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
-          console.log(`Retrying in ${delayMs}ms...`);
           await sleep(delayMs);
+          continue;
         }
       }
-    }
 
-    throw lastError || new Error("All inference attempts failed");
-  } finally {
-    // CRITICAL: zero mnemonic reference
-    if (mnemonic) {
-      mnemonic = "";
-      mnemonic = null;
+      // Check for server errors (5xx)
+      if (res.status >= 500 && res.status < 600) {
+        const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.warn(`Server error (${res.status}). Retrying in ${delayMs}ms...`);
+        
+        providerIndex++;
+        
+        if (attempt < MAX_RETRIES - 1) {
+          await sleep(delayMs);
+          continue;
+        }
+      }
+
+      console.log("Gonka response status:", res.status);
+      return res;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.error("Fetch error:", lastError.message);
+      
+      providerIndex++;
+      
+      if (attempt < MAX_RETRIES - 1) {
+        const delayMs = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.log(`Retrying in ${delayMs}ms...`);
+        await sleep(delayMs);
+      }
     }
   }
+
+  throw lastError || new Error("All inference attempts failed");
 }

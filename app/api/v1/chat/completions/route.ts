@@ -6,10 +6,10 @@
 
 import { NextResponse } from "next/server";
 import { createHash } from "crypto";
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, isNull, and, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { apiKeys, users, usageLogs } from "@/lib/db/schema";
+import { apiKeys, usageLogs, apiSubscriptions } from "@/lib/db/schema";
 import { gonkaInference } from "@/lib/gonka/inference";
 
 function hashApiKey(key: string): string {
@@ -20,7 +20,6 @@ function extractApiKey(req: Request): string | null {
   const auth = req.headers.get("authorization");
   if (!auth) return null;
   
-  // Support both "Bearer xxx" and just "xxx"
   if (auth.startsWith("Bearer ")) {
     return auth.slice(7);
   }
@@ -57,12 +56,27 @@ export async function POST(req: Request) {
     }
 
     const user = keyRecord.user;
-    
-    // 3. Check user has wallet credentials
-    if (!user.gonkaAddress || !user.encryptedMnemonic) {
+
+    // 3. Check subscription
+    const subscription = await db.query.apiSubscriptions.findFirst({
+      where: and(
+        eq(apiSubscriptions.userId, user.id),
+        eq(apiSubscriptions.status, "active")
+      ),
+    });
+
+    if (!subscription) {
       return NextResponse.json(
-        { error: { message: "Account not fully provisioned. Please contact support.", type: "server_error", code: "no_wallet" } },
-        { status: 500 }
+        { error: { message: "No active subscription", type: "billing_error", code: "no_subscription" } },
+        { status: 402 }
+      );
+    }
+
+    const tokensRemaining = (subscription.tokensAllocated ?? 0n) - (subscription.tokensUsed ?? 0n);
+    if (tokensRemaining <= 0n) {
+      return NextResponse.json(
+        { error: { message: "Token limit reached. Wait for renewal or upgrade.", type: "billing_error", code: "insufficient_tokens" } },
+        { status: 402 }
       );
     }
 
@@ -88,25 +102,22 @@ export async function POST(req: Request) {
       .set({ lastUsedAt: new Date() })
       .where(eq(apiKeys.id, keyRecord.id));
 
-    // 6. Run inference using user's wallet
+    // 6. Run inference using shared wallet
     const upstreamRes = await gonkaInference({
       model,
       messages,
       stream,
       max_tokens,
       temperature,
-      gonkaAddress: user.gonkaAddress,
-      encryptedMnemonic: user.encryptedMnemonic,
     });
 
-    // 7. Handle errors from upstream
     if (!upstreamRes.ok) {
       const errorText = await upstreamRes.text();
       console.error("[api/v1] Upstream error:", upstreamRes.status, errorText);
       
       if (upstreamRes.status === 429) {
         return NextResponse.json(
-          { error: { message: "Rate limited by inference provider. Please try again.", type: "rate_limit_error", code: "upstream_rate_limited" } },
+          { error: { message: "Rate limited. Please try again.", type: "rate_limit_error", code: "upstream_rate_limited" } },
           { status: 429 }
         );
       }
@@ -117,7 +128,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 8. For streaming, proxy the response directly
+    // 7. For streaming, proxy the response
     if (stream) {
       return new Response(upstreamRes.body, {
         headers: {
@@ -128,18 +139,27 @@ export async function POST(req: Request) {
       });
     }
 
-    // 9. For non-streaming, parse and log usage
+    // 8. For non-streaming, parse and log usage
     const data = await upstreamRes.json();
     
-    // Log usage if we have token counts
     const usage = data?.usage;
     if (usage) {
       const promptTokens = Number(usage.prompt_tokens ?? 0);
       const completionTokens = Number(usage.completion_tokens ?? 0);
+      const totalTokens = promptTokens + completionTokens;
       
-      // Calculate cost (Qwen pricing: $0.50/1M input, $1.00/1M output)
       const costUsd = (promptTokens * 0.5 + completionTokens * 1.0) / 1_000_000;
       
+      // Deduct from subscription
+      if (totalTokens > 0) {
+        await db.update(apiSubscriptions)
+          .set({ 
+            tokensUsed: sql`${apiSubscriptions.tokensUsed} + ${totalTokens}`,
+            updatedAt: new Date()
+          })
+          .where(eq(apiSubscriptions.id, subscription.id));
+      }
+
       await db.insert(usageLogs).values({
         userId: user.id,
         apiKeyId: keyRecord.id,

@@ -38,9 +38,3 @@ export async function requireAuth() {
 
   return userId;
 }
-
-export async function getUserBalance(userId: string) {
-  const [user] = await db.select({ balanceUsd: users.balanceUsd }).from(users).where(eq(users.id, userId)).limit(1);
-
-  return user?.balanceUsd ?? "0";
-}

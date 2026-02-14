@@ -104,7 +104,7 @@ export default async function ApiDocsPage() {
                 <p className="text-sm text-white/50">For developers & apps</p>
               </div>
               <div className="mb-6">
-                <span className="text-3xl font-bold text-white">$2.99</span>
+                <span className="text-3xl font-bold text-white">$4.99</span>
                 <span className="text-white/50">/month</span>
               </div>
               <ul className="mb-6 flex-1 space-y-3 text-sm text-white/70">

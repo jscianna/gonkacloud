@@ -1,6 +1,6 @@
 /**
  * Public chat endpoint - no auth required
- * Uses the Dogecat wallet (funded) for free inference
+ * Uses the shared Gonka wallet for free inference
  * Rate limited by IP to prevent abuse
  */
 
@@ -8,11 +8,7 @@ import { NextResponse } from "next/server";
 
 import { gonkaInference } from "@/lib/gonka/inference";
 
-// Dogecat wallet - stored server-side for public chat
-const DOGECAT_WALLET_ADDRESS = process.env.DOGECAT_WALLET_ADDRESS || "gonka1g72am4v9gc5c0z66pcvtlz73hk6k52r0kkv6fy";
-const DOGECAT_WALLET_ENCRYPTED_MNEMONIC = process.env.DOGECAT_WALLET_ENCRYPTED_MNEMONIC;
-
-// Simple in-memory rate limiting by IP (for serverless, use Upstash Redis in production)
+// Simple in-memory rate limiting by IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_REQUESTS = 10; // requests per window
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
@@ -41,8 +37,8 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
 }
 
 export async function POST(req: Request) {
-  // Check if dogecat wallet is configured
-  if (!DOGECAT_WALLET_ENCRYPTED_MNEMONIC) {
+  // Check if wallet is configured
+  if (!process.env.GONKA_MNEMONIC) {
     return NextResponse.json(
       { error: { message: "Public chat not configured", type: "server_error", code: "not_configured" } },
       { status: 503 }
@@ -72,19 +68,15 @@ export async function POST(req: Request) {
     }
 
     // Limit conversation length for public chat
-    const limitedMessages = messages.slice(-5); // Last 5 messages only
+    const limitedMessages = messages.slice(-5);
 
-    // Run inference using Dogecat wallet - returns raw Response
     const upstreamRes = await gonkaInference({
       model,
       messages: limitedMessages,
       max_tokens: 500, // Limit tokens for public chat
       stream,
-      gonkaAddress: DOGECAT_WALLET_ADDRESS,
-      encryptedMnemonic: DOGECAT_WALLET_ENCRYPTED_MNEMONIC,
     });
 
-    // Check for upstream errors
     if (!upstreamRes.ok) {
       const errorText = await upstreamRes.text();
       console.error("[public-chat] Upstream error:", upstreamRes.status, errorText);
@@ -102,7 +94,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // For streaming, proxy the response directly
     if (stream) {
       return new Response(upstreamRes.body, {
         headers: {
@@ -114,7 +105,6 @@ export async function POST(req: Request) {
       });
     }
 
-    // For non-streaming, return the JSON response
     const data = await upstreamRes.json();
     return NextResponse.json(data, {
       headers: { "X-RateLimit-Remaining": String(remaining) }
@@ -125,7 +115,6 @@ export async function POST(req: Request) {
     
     const message = error instanceof Error ? error.message : "Inference failed";
     
-    // Check for rate limit from upstream
     if (message.includes("rate limit")) {
       return NextResponse.json(
         { error: { message: "The network is busy. Please try again in a few minutes.", type: "rate_limit_error", code: "upstream_rate_limited" } },

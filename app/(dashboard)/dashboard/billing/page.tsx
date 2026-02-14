@@ -116,7 +116,7 @@ export default async function BillingPage() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-white/60">Price</span>
-                <span className="text-white">$2.99/month</span>
+                <span className="text-white">$4.99/month</span>
               </div>
             </CardContent>
           </Card>
@@ -136,7 +136,7 @@ export default async function BillingPage() {
           <CardContent className="space-y-6">
             <div className="mx-auto max-w-md space-y-4">
               <div className="text-center">
-                <span className="text-4xl font-bold text-white">$2.99</span>
+                <span className="text-4xl font-bold text-white">$4.99</span>
                 <span className="text-white/50">/month</span>
               </div>
 
