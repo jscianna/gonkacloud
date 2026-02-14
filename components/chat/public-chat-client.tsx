@@ -155,12 +155,20 @@ export function PublicChatClient() {
             <span>{MODEL_SHORT}</span>
           </div>
         </div>
-        <Link 
-          href="/api-docs" 
-          className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
-        >
-          API
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link 
+            href="/api-docs" 
+            className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+          >
+            API
+          </Link>
+          <Link 
+            href="/sign-in" 
+            className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-400"
+          >
+            Sign In
+          </Link>
+        </div>
       </header>
 
       {/* Main content */}

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubscribeButton } from "@/components/billing/subscribe-button";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiSubscriptions } from "@/lib/db/schema";
@@ -163,9 +164,7 @@ export default async function BillingPage() {
                 </li>
               </ul>
 
-              <Button className="w-full bg-emerald-500 py-6 text-lg font-semibold text-white hover:bg-emerald-400">
-                Subscribe Now
-              </Button>
+              <SubscribeButton />
 
               <p className="text-center text-xs text-white/40">
                 Cancel anytime. Unused tokens don&apos;t roll over.
