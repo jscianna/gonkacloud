@@ -231,7 +231,10 @@ async function getWalletCredentials(): Promise<{ privateKeyHex: string; address:
   const seed = await Bip39.mnemonicToSeed(new EnglishMnemonic(GONKA_MNEMONIC));
   const { privkey } = Slip10.derivePath(Slip10Curve.Secp256k1, seed, hdPath);
 
-  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(GONKA_MNEMONIC, { prefix: "gonka" });
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(GONKA_MNEMONIC, { 
+    prefix: "gonka",
+    hdPaths: [hdPath]
+  });
   const accounts = await wallet.getAccounts();
   
   if (!accounts[0]) {
