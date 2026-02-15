@@ -39,6 +39,7 @@ export function BillingPanel() {
   const [data, setData] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
+  const [openingPortal, setOpeningPortal] = useState(false);
 
   useEffect(() => {
     fetch("/api/subscription")
@@ -62,6 +63,23 @@ export function BillingPanel() {
       alert("Failed to start subscription");
     } finally {
       setSubscribing(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setOpeningPortal(true);
+    try {
+      const res = await fetch("/api/billing/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || "Failed to open billing portal");
+      }
+    } catch {
+      alert("Failed to open billing portal");
+    } finally {
+      setOpeningPortal(false);
     }
   };
 
@@ -191,7 +209,7 @@ export function BillingPanel() {
               <span className="text-gray-600">{isFree ? "Allocation" : "Price"}</span>
               <span className="text-gray-900">{isFree ? "1M tokens (one-time)" : "$4.99/month"}</span>
             </div>
-            {isFree && (
+            {isFree ? (
               <Button
                 onClick={handleSubscribe}
                 disabled={subscribing}
@@ -199,6 +217,16 @@ export function BillingPanel() {
               >
                 {subscribing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                 Upgrade to 100M/month
+              </Button>
+            ) : (
+              <Button
+                onClick={handleManageSubscription}
+                disabled={openingPortal}
+                variant="outline"
+                className="w-full border-gray-300 text-gray-700 hover:bg-gray-100 text-base"
+              >
+                {openingPortal ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                Manage Subscription
               </Button>
             )}
           </CardContent>
