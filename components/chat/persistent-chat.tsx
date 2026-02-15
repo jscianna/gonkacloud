@@ -236,7 +236,7 @@ export function PersistentChat({
     <div className="flex h-full flex-col bg-white">
       {/* Messages area */}
       <div ref={listRef} className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-3xl px-4 py-6">
+        <div className="mx-auto w-full max-w-4xl px-6 py-6 lg:px-8">
           {!hasMessages ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="relative mb-4">
@@ -276,12 +276,12 @@ export function PersistentChat({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-200 bg-gray-50 px-4 py-5">
-        <div className="mx-auto w-full max-w-3xl">
+      <div className="border-t border-gray-200 bg-gray-50 px-4 py-5 lg:px-8">
+        <div className="mx-auto w-full max-w-4xl">
           <div className="relative overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none bg-transparent px-5 py-4 pr-16 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
+              className="w-full resize-none bg-transparent px-5 py-4 pr-16 text-lg text-gray-900 placeholder:text-gray-400 focus:outline-none"
               placeholder="Message dogecat..."
               value={input}
               onChange={(e) => {
@@ -340,8 +340,8 @@ function MessageBubble({ role, content }: { role: "user" | "assistant"; content:
       <div
         className={
           isUser
-            ? "max-w-[85%] rounded-2xl bg-emerald-500 px-5 py-3 text-base text-white sm:max-w-[75%]"
-            : "max-w-[85%] text-base text-gray-800 sm:max-w-[75%]"
+            ? "max-w-[85%] rounded-2xl bg-emerald-500 px-5 py-3 text-[17px] leading-relaxed text-white sm:max-w-[80%]"
+            : "max-w-[85%] text-[17px] leading-relaxed text-gray-800 sm:max-w-[80%]"
         }
       >
         <Message role={role} content={content} />
