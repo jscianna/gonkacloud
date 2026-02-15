@@ -273,7 +273,7 @@ export function PublicChatClient() {
               {tokenCount > 0 && (
                 <span>{tokenCount.toLocaleString()} tokens</span>
               )}
-              <span>Sign up for 1M free tokens • <Link href="/sign-up" className="text-emerald-400/70 hover:text-emerald-400">Get started →</Link></span>
+              <span className="text-white/70">Sign up for 1M free tokens • <Link href="/sign-up" className="text-emerald-400 hover:text-emerald-300">Get started →</Link></span>
             </div>
             <div className="flex items-center justify-center gap-4 text-xs text-white/20">
               <Link href="/legal/terms" className="hover:text-white/40 transition">Terms</Link>
