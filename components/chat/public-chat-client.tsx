@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Loader2, ChevronDown, Sparkles } from "lucide-react";
+import { Send, Loader2, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -43,7 +43,7 @@ export function PublicChatClient() {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "0px";
-    const lineHeight = 24;
+    const lineHeight = 28;
     const maxHeight = lineHeight * 6;
     const next = Math.min(el.scrollHeight, maxHeight);
     el.style.height = `${next}px`;
@@ -146,25 +146,25 @@ export function PublicChatClient() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0a0a0b]">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
-      <header className="fixed top-0 z-50 flex w-full items-center justify-between px-5 py-4">
+      <header className="fixed top-0 z-50 flex w-full items-center justify-between border-b border-gray-200 bg-white/95 backdrop-blur px-5 py-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-3 text-xs font-medium text-white/70">
-            <Sparkles className="h-3 w-3 text-emerald-400" />
+          <div className="flex h-8 items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 text-sm font-medium text-gray-600">
+            <Sparkles className="h-4 w-4 text-emerald-500" />
             <span>{MODEL_SHORT}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Link 
             href="/api-docs" 
-            className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-sm font-medium text-white/80 transition hover:border-white/20 hover:bg-white/[0.06] hover:text-white"
+            className="rounded-full border border-gray-300 bg-white px-4 py-1.5 text-base font-medium text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
           >
             API
           </Link>
           <Link 
             href="/sign-up" 
-            className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-400"
+            className="rounded-full bg-emerald-500 px-4 py-1.5 text-base font-medium text-white transition hover:bg-emerald-600"
           >
             Get 1M Free Tokens
           </Link>
@@ -172,29 +172,29 @@ export function PublicChatClient() {
       </header>
 
       {/* Main content */}
-      <main ref={listRef} className="flex-1 overflow-auto pt-16">
-        <div className="mx-auto w-full max-w-2xl px-4">
+      <main ref={listRef} className="flex-1 overflow-auto pt-20">
+        <div className="mx-auto w-full max-w-5xl px-6 lg:px-10">
           {!hasMessages ? (
-            <div className="flex min-h-[calc(100vh-180px)] flex-col items-center justify-center">
+            <div className="flex min-h-[calc(100vh-220px)] flex-col items-center justify-center">
               {/* Logo */}
               <div className="relative mb-8">
-                <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 blur-2xl" />
+                <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-2xl" />
                 <Image
                   src="/logo.svg"
                   alt="dogecat"
-                  width={120}
-                  height={120}
-                  className="relative rounded-3xl drop-shadow-2xl"
+                  width={140}
+                  height={140}
+                  className="relative rounded-3xl drop-shadow-xl"
                 />
               </div>
               
               {/* Brand name */}
-              <h1 className="mb-3 text-5xl font-bold tracking-tight text-white">
+              <h1 className="mb-3 text-5xl font-bold tracking-tight text-gray-900">
                 dogecat
               </h1>
               
               {/* Tagline */}
-              <p className="mb-10 text-base text-white/50">
+              <p className="mb-10 text-lg text-gray-500">
                 Decentralized AI inference
               </p>
 
@@ -211,7 +211,7 @@ export function PublicChatClient() {
                       setInput(prompt);
                       textareaRef.current?.focus();
                     }}
-                    className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left text-sm text-white/70 transition hover:border-emerald-500/30 hover:bg-white/[0.06] hover:text-white"
+                    className="rounded-xl border border-gray-200 bg-gray-50 px-5 py-4 text-left text-base text-gray-600 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-gray-900"
                   >
                     {prompt}
                   </button>
@@ -219,15 +219,15 @@ export function PublicChatClient() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-6 pb-32 pt-8">
+            <div className="flex flex-col gap-8 pb-40 pt-8">
               {messages.map((m) => (
                 <MessageBubble key={m.id} role={m.role} content={m.content} />
               ))}
 
               {typing && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] px-4 py-3 text-sm text-white/60">
-                    <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                  <div className="flex items-center gap-2 rounded-2xl bg-gray-100 px-5 py-3 text-base text-gray-600">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
                     <span>Thinking...</span>
                   </div>
                 </div>
@@ -238,12 +238,12 @@ export function PublicChatClient() {
       </main>
 
       {/* Input area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b] to-transparent pb-6 pt-8">
-        <div className="mx-auto w-full max-w-2xl px-4">
-          <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#1a1a1c] shadow-2xl shadow-black/60 ring-1 ring-white/5">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-gray-50 pb-6 pt-5">
+        <div className="mx-auto w-full max-w-5xl px-6 lg:px-10">
+          <div className="relative overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none bg-transparent px-5 py-4 pr-14 text-sm text-white placeholder:text-white/40 focus:outline-none"
+              className="w-full resize-none bg-transparent px-5 py-4 pr-16 text-[18px] text-gray-900 placeholder:text-gray-400 focus:outline-none"
               placeholder="Message dogecat..."
               value={input}
               onChange={(e) => {
@@ -261,25 +261,25 @@ export function PublicChatClient() {
             <button
               disabled={sending || !input.trim()}
               onClick={send}
-              className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white transition hover:bg-emerald-400 disabled:opacity-30 disabled:hover:bg-emerald-500"
+              className="absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white transition hover:bg-emerald-600 disabled:opacity-30 disabled:hover:bg-emerald-500"
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </button>
           </div>
 
           {/* Footer info */}
           <div className="mt-3 flex flex-col items-center gap-2">
-            <div className="flex items-center justify-center gap-3 text-xs text-white/30">
+            <div className="flex items-center justify-center gap-3 text-sm text-gray-500">
               {tokenCount > 0 && (
                 <span>{tokenCount.toLocaleString()} tokens</span>
               )}
-              <span className="text-white/70">Sign up for 1M free tokens • <Link href="/sign-up" className="text-emerald-400 hover:text-emerald-300">Get started →</Link></span>
+              <span>Sign up for 1M free tokens • <Link href="/sign-up" className="text-emerald-600 hover:text-emerald-700 font-medium">Get started →</Link></span>
             </div>
-            <div className="flex items-center justify-center gap-4 text-xs text-white/20">
-              <Link href="/legal/terms" className="hover:text-white/40 transition">Terms</Link>
-              <Link href="/legal/privacy" className="hover:text-white/40 transition">Privacy</Link>
-              <Link href="/legal/acceptable-use" className="hover:text-white/40 transition">Acceptable Use</Link>
-              <Link href="/legal/disclaimer" className="hover:text-white/40 transition">Disclaimer</Link>
+            <div className="flex items-center justify-center gap-4 text-sm text-gray-400">
+              <Link href="/legal/terms" className="hover:text-gray-600 transition">Terms</Link>
+              <Link href="/legal/privacy" className="hover:text-gray-600 transition">Privacy</Link>
+              <Link href="/legal/acceptable-use" className="hover:text-gray-600 transition">Acceptable Use</Link>
+              <Link href="/legal/disclaimer" className="hover:text-gray-600 transition">Disclaimer</Link>
             </div>
           </div>
         </div>
@@ -288,7 +288,7 @@ export function PublicChatClient() {
   );
 }
 
-// Dark-themed message component
+// Light-themed message component
 function MessageBubble({ role, content }: { role: "user" | "assistant"; content: string }) {
   const isUser = role === "user";
 
@@ -299,13 +299,11 @@ function MessageBubble({ role, content }: { role: "user" | "assistant"; content:
       <div
         className={
           isUser
-            ? "max-w-[85%] rounded-2xl bg-emerald-500/90 px-4 py-3 text-sm text-white sm:max-w-[75%]"
-            : "max-w-[85%] text-sm text-white/90 sm:max-w-[75%]"
+            ? "max-w-[85%] rounded-2xl bg-emerald-500 px-5 py-3 text-[18px] leading-relaxed text-white sm:max-w-[80%]"
+            : "max-w-[85%] text-[18px] leading-relaxed text-gray-800 sm:max-w-[80%]"
         }
       >
-        <div className={isUser ? "prose prose-sm prose-invert max-w-none" : "prose prose-sm prose-invert max-w-none"}>
-          <Message role={role} content={content} />
-        </div>
+        <Message role={role} content={content} />
       </div>
     </div>
   );
