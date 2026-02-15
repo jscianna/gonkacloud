@@ -4,7 +4,10 @@ import { NextResponse } from "next/server";
 
 import { UnauthorizedError, requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { apiKeys, users } from "@/lib/db/schema";
+import { apiKeys, users, apiSubscriptions } from "@/lib/db/schema";
+
+// Free tier tokens
+const FREE_TIER_TOKENS = 1_000_000n;
 
 function sha256Hex(input: string) {
   return crypto.createHash("sha256").update(input).digest("hex");
@@ -66,11 +69,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid name" }, { status: 400 });
     }
 
-    const [dbUser] = await db.select({ id: users.id }).from(users).where(eq(users.clerkId, clerkId)).limit(1);
+    let [dbUser] = await db.select({ id: users.id }).from(users).where(eq(users.clerkId, clerkId)).limit(1);
 
+    // Auto-provision user if Clerk webhook didn't fire (fallback)
     if (!dbUser) {
-      console.warn("[api/keys][POST] user not provisioned", { clerkId });
-      return NextResponse.json({ error: "User not provisioned" }, { status: 400 });
+      console.log("[api/keys][POST] Auto-provisioning user:", clerkId);
+      const { currentUser } = await import("@clerk/nextjs/server");
+      const clerkUser = await currentUser();
+      const email = clerkUser?.emailAddresses?.[0]?.emailAddress || `${clerkId}@temp.local`;
+      
+      const userId = crypto.randomUUID();
+      await db.insert(users).values({
+        id: userId,
+        clerkId,
+        email,
+      }).onConflictDoNothing();
+      
+      // Create free tier subscription (1M tokens)
+      await db.insert(apiSubscriptions).values({
+        userId,
+        status: "free",
+        tokensAllocated: FREE_TIER_TOKENS,
+        tokensUsed: 0n,
+      }).onConflictDoNothing();
+      
+      dbUser = { id: userId };
+      console.log("[api/keys][POST] User auto-provisioned:", userId);
     }
 
     const fullKey = generateApiKey();

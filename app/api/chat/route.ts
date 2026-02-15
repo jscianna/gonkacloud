@@ -69,14 +69,36 @@ export async function POST(req: Request) {
       throw new ApiError(400, "Missing messages", "invalid_request_error", "missing_messages");
     }
 
-    const [dbUser] = await db
+    let [dbUser] = await db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.clerkId, clerkId))
       .limit(1);
 
+    // Auto-provision user if Clerk webhook didn't fire (fallback)
     if (!dbUser) {
-      throw new ApiError(400, "User not provisioned", "invalid_request_error", "user_not_provisioned");
+      console.log("[chat] Auto-provisioning user:", clerkId);
+      const { currentUser } = await import("@clerk/nextjs/server");
+      const clerkUser = await currentUser();
+      const email = clerkUser?.emailAddresses?.[0]?.emailAddress || `${clerkId}@temp.local`;
+      
+      const userId = crypto.randomUUID();
+      await db.insert(users).values({
+        id: userId,
+        clerkId,
+        email,
+      }).onConflictDoNothing();
+      
+      // Create free tier subscription (1M tokens)
+      await db.insert(apiSubscriptions).values({
+        userId,
+        status: "free",
+        tokensAllocated: 1_000_000n,
+        tokensUsed: 0n,
+      }).onConflictDoNothing();
+      
+      dbUser = { id: userId };
+      console.log("[chat] User auto-provisioned:", userId);
     }
 
     // Check user's subscription and token balance
