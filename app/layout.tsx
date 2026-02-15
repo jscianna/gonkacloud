@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   title: "dogecat",
   description: "Credit-card wrapper for decentralized AI inference on Gonka.ai",
   icons: {
-    icon: "/logo.svg",
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
