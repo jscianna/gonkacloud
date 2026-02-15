@@ -219,7 +219,7 @@ export function PublicChatClient() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-8 pb-40 pt-8">
+            <div className="flex flex-col gap-8 pb-52 pt-8">
               {messages.map((m) => (
                 <MessageBubble key={m.id} role={m.role} content={m.content} />
               ))}
