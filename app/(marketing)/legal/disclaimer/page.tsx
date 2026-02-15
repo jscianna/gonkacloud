@@ -55,10 +55,10 @@ export default function ServiceDisclaimer() {
                   </div>
                   
                   <div className="bg-black/30 rounded-lg p-4">
-                    <p className="font-bold text-white text-lg mb-2">💾 CHAT HISTORY IS NOT END-TO-END ENCRYPTED</p>
+                    <p className="font-bold text-emerald-400 text-lg mb-2">✅ EPHEMERAL CHAT — WE DO NOT STORE YOUR CONVERSATIONS</p>
                     <p className="text-white/90">
-                      Conversations are stored in our database in plaintext. Block Thyme, LLC technically has 
-                      access to stored chat data. We don't actively monitor, but data is accessible.
+                      Your chat history exists <strong>only in your browser's local storage</strong>. We do not store your prompts 
+                      or AI responses on our servers. When you clear your browser data, your conversations are gone forever.
                     </p>
                   </div>
                   
@@ -113,17 +113,23 @@ export default function ServiceDisclaimer() {
             </section>
             
             <section>
-              <h2 className="text-xl font-semibold text-white">2. Chat Storage Practices</h2>
-              <div className="bg-white/5 border border-white/10 rounded-lg p-4 my-4">
-                <p className="font-semibold text-white mb-2">💾 How Your Conversations Are Stored</p>
+              <h2 className="text-xl font-semibold text-white">2. Ephemeral Chat — No Server-Side Storage</h2>
+              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 my-4">
+                <p className="font-semibold text-emerald-400 mb-2">✅ YOUR CHATS ARE NOT STORED ON OUR SERVERS</p>
+                <p className="mb-2">
+                  Dogecat uses an ephemeral chat model:
+                </p>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Chat history is stored in our PostgreSQL database</li>
-                  <li>Storage is <strong>NOT end-to-end encrypted</strong></li>
-                  <li>Block Thyme, LLC has technical access to stored conversations</li>
-                  <li>We do not actively monitor or review chats under normal operations</li>
-                  <li>We may access data for: legal compliance, abuse investigation, or user-requested support</li>
-                  <li>Database backups contain chat history in readable form</li>
+                  <li><strong>Browser-only storage</strong> — Your conversations exist only in your browser's local storage</li>
+                  <li><strong>No database storage</strong> — We do not save your prompts or AI responses to any server</li>
+                  <li><strong>Clear browser data = gone</strong> — When you clear your browser data, conversations are permanently deleted</li>
+                  <li><strong>No chat history on our end</strong> — We cannot retrieve your previous conversations</li>
+                  <li><strong>No backups</strong> — We have no backup copies of your chats because we never stored them</li>
                 </ul>
+                <p className="mt-3">
+                  This design maximizes your privacy. Block Thyme, LLC cannot access, review, or disclose your conversation 
+                  content because we simply do not have it.
+                </p>
               </div>
             </section>
             

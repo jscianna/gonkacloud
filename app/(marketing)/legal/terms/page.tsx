@@ -47,10 +47,10 @@ export default function TermsOfService() {
                   </div>
 
                   <div className="bg-black/30 rounded-lg p-4">
-                    <p className="font-bold text-white text-lg mb-2">💾 CHAT HISTORY STORED WITHOUT E2E ENCRYPTION</p>
+                    <p className="font-bold text-emerald-400 text-lg mb-2">✅ EPHEMERAL CHAT — WE DO NOT STORE YOUR CONVERSATIONS</p>
                     <p className="text-white/90">
-                      Your conversations are stored in our database in plaintext. While we don't actively monitor chats, 
-                      Block Thyme, LLC has technical access to stored data.
+                      Your chat history exists <strong>only in your browser's local storage</strong>. We do not store your prompts 
+                      or AI responses on our servers. When you clear your browser data, your conversations are gone forever.
                     </p>
                   </div>
 
