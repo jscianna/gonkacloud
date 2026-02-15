@@ -177,29 +177,29 @@ export function PublicChatClient() {
           {!hasMessages ? (
             <div className="flex min-h-[calc(100vh-180px)] flex-col items-center justify-center">
               {/* Logo */}
-              <div className="relative mb-6">
-                <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-xl" />
+              <div className="relative mb-8">
+                <div className="absolute -inset-8 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 blur-2xl" />
                 <Image
                   src="/logo.svg"
                   alt="dogecat"
-                  width={72}
-                  height={72}
-                  className="relative rounded-2xl"
+                  width={120}
+                  height={120}
+                  className="relative rounded-3xl drop-shadow-2xl"
                 />
               </div>
               
               {/* Brand name */}
-              <h1 className="mb-2 text-2xl font-semibold tracking-tight text-white">
+              <h1 className="mb-3 text-5xl font-bold tracking-tight text-white">
                 dogecat
               </h1>
               
               {/* Tagline */}
-              <p className="mb-8 text-sm text-white/40">
+              <p className="mb-10 text-base text-white/50">
                 Decentralized AI inference
               </p>
 
               {/* Example prompts */}
-              <div className="grid w-full max-w-lg gap-2">
+              <div className="grid w-full max-w-lg gap-3">
                 {[
                   "Explain quantum computing in simple terms",
                   "Write a haiku about programming",
@@ -211,7 +211,7 @@ export function PublicChatClient() {
                       setInput(prompt);
                       textareaRef.current?.focus();
                     }}
-                    className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3 text-left text-sm text-white/60 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-white/80"
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 text-left text-sm text-white/70 transition hover:border-emerald-500/30 hover:bg-white/[0.06] hover:text-white"
                   >
                     {prompt}
                   </button>
@@ -240,10 +240,10 @@ export function PublicChatClient() {
       {/* Input area */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b] to-transparent pb-6 pt-8">
         <div className="mx-auto w-full max-w-2xl px-4">
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03] shadow-2xl shadow-black/50">
+          <div className="relative overflow-hidden rounded-2xl border border-white/15 bg-[#1a1a1c] shadow-2xl shadow-black/60 ring-1 ring-white/5">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none bg-transparent px-4 py-3.5 pr-14 text-sm text-white placeholder:text-white/30 focus:outline-none"
+              className="w-full resize-none bg-transparent px-5 py-4 pr-14 text-sm text-white placeholder:text-white/40 focus:outline-none"
               placeholder="Message dogecat..."
               value={input}
               onChange={(e) => {
