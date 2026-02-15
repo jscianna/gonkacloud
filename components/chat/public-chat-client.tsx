@@ -201,9 +201,9 @@ export function PublicChatClient() {
               {/* Example prompts */}
               <div className="grid w-full max-w-lg gap-3">
                 {[
-                  "Roast my mass email outreach strategy 🔥",
-                  "Write a Y Combinator application for a cat cafe",
-                  "Explain why mass relay would actually work in physics",
+                  "Plan a surprise birthday party for under $200",
+                  "Write a resignation letter that doesn't burn bridges",
+                  "Explain the stock market like I'm 10 years old",
                 ].map((prompt) => (
                   <button
                     key={prompt}
