@@ -120,7 +120,7 @@ export function ApiKeysPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
       </div>
     );
   }
@@ -129,28 +129,28 @@ export function ApiKeysPanel() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-white/50">
+          <p className="text-base text-gray-600">
             Create and manage keys for OpenAI-compatible API access.
           </p>
         </div>
 
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-500 hover:bg-emerald-400">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="bg-emerald-500 hover:bg-emerald-600 text-base">
+              <Plus className="mr-2 h-5 w-5" />
               Create New Key
             </Button>
           </DialogTrigger>
-          <DialogContent className="border-white/10 bg-[#141415]">
+          <DialogContent className="border-gray-200 bg-white">
             <DialogHeader>
-              <DialogTitle className="text-white">Create new API key</DialogTitle>
-              <DialogDescription className="text-white/50">
+              <DialogTitle className="text-gray-900 text-xl">Create new API key</DialogTitle>
+              <DialogDescription className="text-gray-500 text-base">
                 Give it a name so you can recognize it later.
               </DialogDescription>
             </DialogHeader>
 
             <div className="mt-4 space-y-2">
-              <label className="text-sm font-medium text-white/70" htmlFor="key-name">
+              <label className="text-base font-medium text-gray-700" htmlFor="key-name">
                 Name
               </label>
               <Input
@@ -158,21 +158,21 @@ export function ApiKeysPanel() {
                 placeholder="Production backend"
                 value={newKeyName}
                 onChange={(e) => setNewKeyName(e.target.value)}
-                className="border-white/10 bg-white/[0.03] text-white placeholder:text-white/30"
+                className="border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 text-base"
               />
             </div>
-            {createError && <p className="mt-3 text-sm text-rose-400">{createError}</p>}
+            {createError && <p className="mt-3 text-base text-red-600">{createError}</p>}
 
             <DialogFooter>
               <DialogClose asChild>
-                <Button variant="outline">Cancel</Button>
+                <Button variant="outline" className="text-base">Cancel</Button>
               </DialogClose>
               <Button
                 disabled={creating || newKeyName.trim().length === 0}
                 onClick={createKey}
-                className="bg-emerald-500 hover:bg-emerald-400"
+                className="bg-emerald-500 hover:bg-emerald-600 text-base"
               >
-                <KeyRound className="mr-2 h-4 w-4" />
+                <KeyRound className="mr-2 h-5 w-5" />
                 {creating ? "Creating..." : "Create"}
               </Button>
             </DialogFooter>
@@ -180,25 +180,25 @@ export function ApiKeysPanel() {
         </Dialog>
       </div>
 
-      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
-          <p className="text-sm font-medium text-white/70">Keys ({activeCount} active)</p>
+      <div className="rounded-xl border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <p className="text-base font-medium text-gray-700">Keys ({activeCount} active)</p>
         </div>
 
         <Table>
           <TableHeader>
-            <TableRow className="border-white/[0.06] hover:bg-white/[0.02]">
-              <TableHead className="text-white/50">Name</TableHead>
-              <TableHead className="text-white/50">Key</TableHead>
-              <TableHead className="text-white/50">Created</TableHead>
-              <TableHead className="text-white/50">Status</TableHead>
-              <TableHead className="text-right text-white/50">Actions</TableHead>
+            <TableRow className="border-gray-200 hover:bg-gray-50">
+              <TableHead className="text-gray-600 text-base">Name</TableHead>
+              <TableHead className="text-gray-600 text-base">Key</TableHead>
+              <TableHead className="text-gray-600 text-base">Created</TableHead>
+              <TableHead className="text-gray-600 text-base">Status</TableHead>
+              <TableHead className="text-right text-gray-600 text-base">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {keys.length === 0 ? (
-              <TableRow className="border-white/[0.06] hover:bg-white/[0.02]">
-                <TableCell colSpan={5} className="py-10 text-center text-sm text-white/40">
+              <TableRow className="border-gray-200 hover:bg-gray-50">
+                <TableCell colSpan={5} className="py-10 text-center text-base text-gray-500">
                   No API keys yet.
                 </TableCell>
               </TableRow>
@@ -208,16 +208,16 @@ export function ApiKeysPanel() {
                 const displayKey = `${key.keyPrefix}…`;
 
                 return (
-                  <TableRow key={key.id} className="border-white/[0.06] hover:bg-white/[0.02]">
-                    <TableCell className="font-medium text-white">{key.name}</TableCell>
-                    <TableCell className="font-mono text-sm text-white/70">{displayKey}</TableCell>
-                    <TableCell className="text-white/60">{formatDate(key.createdAt)}</TableCell>
+                  <TableRow key={key.id} className="border-gray-200 hover:bg-gray-50">
+                    <TableCell className="font-medium text-gray-900 text-base">{key.name}</TableCell>
+                    <TableCell className="font-mono text-base text-gray-600">{displayKey}</TableCell>
+                    <TableCell className="text-gray-600 text-base">{formatDate(key.createdAt)}</TableCell>
                     <TableCell>
                       <span
                         className={
                           isRevoked
-                            ? "inline-flex rounded-full bg-white/10 px-2 py-1 text-xs font-medium text-white/50"
-                            : "inline-flex rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400"
+                            ? "inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-sm font-medium text-gray-500"
+                            : "inline-flex rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-medium text-emerald-700"
                         }
                       >
                         {isRevoked ? "Revoked" : "Active"}
@@ -233,6 +233,7 @@ export function ApiKeysPanel() {
                               const ok = await copyToClipboard(createdFullKey);
                               setCopyOk(ok);
                             }}
+                            className="text-base"
                           >
                             <Copy className="mr-2 h-4 w-4" />
                             Copy
@@ -245,22 +246,23 @@ export function ApiKeysPanel() {
                               disabled={isRevoked || revokingId === key.id}
                               size="sm"
                               variant="destructive"
+                              className="text-base"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Revoke
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="border-white/10 bg-[#141415]">
+                          <DialogContent className="border-gray-200 bg-white">
                             <DialogHeader>
-                              <DialogTitle className="text-white">Revoke API key</DialogTitle>
-                              <DialogDescription className="text-white/50">
+                              <DialogTitle className="text-gray-900 text-xl">Revoke API key</DialogTitle>
+                              <DialogDescription className="text-gray-500 text-base">
                                 Are you sure? This cannot be undone.
                               </DialogDescription>
                             </DialogHeader>
 
-                            <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300">
+                            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-base text-amber-800">
                               <div className="flex items-start gap-2">
-                                <ShieldAlert className="mt-0.5 h-4 w-4" />
+                                <ShieldAlert className="mt-0.5 h-5 w-5" />
                                 <p>
                                   Any services using this key will stop working immediately.
                                 </p>
@@ -269,10 +271,10 @@ export function ApiKeysPanel() {
 
                             <DialogFooter>
                               <DialogClose asChild>
-                                <Button variant="outline">Cancel</Button>
+                                <Button variant="outline" className="text-base">Cancel</Button>
                               </DialogClose>
                               <DialogClose asChild>
-                                <Button variant="destructive" onClick={() => revokeKey(key.id)}>
+                                <Button variant="destructive" onClick={() => revokeKey(key.id)} className="text-base">
                                   {revokingId === key.id ? "Revoking..." : "Revoke"}
                                 </Button>
                               </DialogClose>
@@ -293,28 +295,28 @@ export function ApiKeysPanel() {
         open={Boolean(createdFullKey)}
         onOpenChange={(open) => !open && setCreatedFullKey(null)}
       >
-        <DialogContent className="border-white/10 bg-[#141415]">
+        <DialogContent className="border-gray-200 bg-white">
           <DialogHeader>
-            <DialogTitle className="text-white">API key created</DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogTitle className="text-gray-900 text-xl">API key created</DialogTitle>
+            <DialogDescription className="text-gray-500 text-base">
               Copy this key now. You won&apos;t see it again.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-4 space-y-3">
-            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-              <p className="break-all font-mono text-sm text-emerald-400">{createdFullKey}</p>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="break-all font-mono text-base text-emerald-600">{createdFullKey}</p>
             </div>
 
-            {copyOk === true && <p className="text-sm text-emerald-400">Copied to clipboard.</p>}
+            {copyOk === true && <p className="text-base text-emerald-600">Copied to clipboard.</p>}
             {copyOk === false && (
-              <p className="text-sm text-rose-400">Copy failed. Please copy manually.</p>
+              <p className="text-base text-red-600">Copy failed. Please copy manually.</p>
             )}
           </div>
 
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Done</Button>
+              <Button variant="outline" className="text-base">Done</Button>
             </DialogClose>
             <Button
               onClick={async () => {
@@ -322,9 +324,9 @@ export function ApiKeysPanel() {
                 const ok = await copyToClipboard(createdFullKey);
                 setCopyOk(ok);
               }}
-              className="bg-emerald-500 hover:bg-emerald-400"
+              className="bg-emerald-500 hover:bg-emerald-600 text-base"
             >
-              <Copy className="mr-2 h-4 w-4" />
+              <Copy className="mr-2 h-5 w-5" />
               Copy Key
             </Button>
           </DialogFooter>

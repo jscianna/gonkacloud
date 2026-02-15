@@ -76,9 +76,9 @@ export function ConversationSidebar({
         <Button
           onClick={onNew}
           variant="outline"
-          className="w-full justify-start gap-2 border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+          className="w-full justify-start gap-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-100 text-base"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-5 w-5" />
           New chat
         </Button>
       </div>
@@ -86,13 +86,13 @@ export function ConversationSidebar({
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto px-2 pb-4">
         {groups.length === 0 ? (
-          <div className="px-3 py-8 text-center text-sm text-white/30">
+          <div className="px-3 py-8 text-center text-base text-gray-400">
             No conversations yet
           </div>
         ) : (
           groups.map((group) => (
             <div key={group.label} className="mb-4">
-              <div className="px-3 py-2 text-xs font-medium text-white/40">
+              <div className="px-3 py-2 text-sm font-medium text-gray-500">
                 {group.label}
               </div>
               <div className="space-y-0.5">
@@ -129,31 +129,31 @@ function ConversationItem({
     <div
       onClick={onSelect}
       className={cn(
-        "group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+        "group relative flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-base transition-colors",
         isActive
-          ? "bg-emerald-500/10 text-emerald-400"
-          : "text-white/60 hover:bg-white/[0.06] hover:text-white"
+          ? "bg-emerald-50 text-emerald-700"
+          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
       )}
     >
-      <MessageSquare className="h-4 w-4 shrink-0" />
+      <MessageSquare className="h-5 w-5 shrink-0" />
       <span className="flex-1 truncate">{conversation.title}</span>
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             onClick={(e) => e.stopPropagation()}
-            className="opacity-0 group-hover:opacity-100 hover:text-white"
+            className="opacity-0 group-hover:opacity-100 hover:text-gray-900"
           >
-            <MoreHorizontal className="h-4 w-4" />
+            <MoreHorizontal className="h-5 w-5" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="border-white/10 bg-[#1a1a1b] text-white"
+          className="border-gray-200 bg-white text-gray-900"
         >
           <DropdownMenuItem
             onClick={onDelete}
-            className="text-red-400 focus:bg-red-500/10 focus:text-red-400"
+            className="text-red-600 focus:bg-red-50 focus:text-red-600"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete

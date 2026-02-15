@@ -48,18 +48,18 @@ export function UsagePanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   if (!data || data.status === "none") {
     return (
-      <Card className="border-white/[0.08] bg-white/[0.02]">
+      <Card className="border-gray-200 bg-white">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <Activity className="h-12 w-12 text-white/20" />
-          <p className="mt-4 text-lg font-medium text-white">No usage yet</p>
-          <p className="mt-1 text-sm text-white/50">
+          <Activity className="h-12 w-12 text-gray-300" />
+          <p className="mt-4 text-xl font-medium text-gray-900">No usage yet</p>
+          <p className="mt-1 text-base text-gray-500">
             Create an API key and start making requests to see your usage.
           </p>
         </CardContent>
@@ -77,50 +77,50 @@ export function UsagePanel() {
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-white/[0.08] bg-white/[0.02]">
+        <Card className="border-gray-200 bg-white">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2 text-white/50">
-              <Sparkles className="h-4 w-4" />
+            <CardDescription className="flex items-center gap-2 text-gray-500 text-base">
+              <Sparkles className="h-5 w-5" />
               Tokens Remaining
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-emerald-400">
+            <p className="text-3xl font-bold text-emerald-600">
               {formatTokens(data.tokensRemaining)}
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-white/[0.08] bg-white/[0.02]">
+        <Card className="border-gray-200 bg-white">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2 text-white/50">
-              <Activity className="h-4 w-4" />
+            <CardDescription className="flex items-center gap-2 text-gray-500 text-base">
+              <Activity className="h-5 w-5" />
               Tokens Used
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-white">{formatTokens(data.tokensUsed)}</p>
+            <p className="text-3xl font-bold text-gray-900">{formatTokens(data.tokensUsed)}</p>
           </CardContent>
         </Card>
 
-        <Card className="border-white/[0.08] bg-white/[0.02]">
+        <Card className="border-gray-200 bg-white">
           <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-2 text-white/50">
-              <TrendingUp className="h-4 w-4" />
+            <CardDescription className="flex items-center gap-2 text-gray-500 text-base">
+              <TrendingUp className="h-5 w-5" />
               Usage
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-white">{usagePercent}%</p>
+            <p className="text-3xl font-bold text-gray-900">{usagePercent}%</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Progress Bar */}
-      <Card className="border-white/[0.08] bg-white/[0.02]">
+      <Card className="border-gray-200 bg-white">
         <CardHeader>
-          <CardTitle className="text-white">{isFree ? "Free Tier" : "Current Period"}</CardTitle>
-          <CardDescription className="text-white/50">
+          <CardTitle className="text-gray-900 text-xl">{isFree ? "Free Tier" : "Current Period"}</CardTitle>
+          <CardDescription className="text-gray-500 text-base">
             {isFree
               ? "One-time 1M tokens • Upgrade for 100M/month"
               : `Resets on ${formatDate(data.currentPeriodEnd)}`}
@@ -128,11 +128,11 @@ export function UsagePanel() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex justify-between text-sm text-white/60">
+            <div className="flex justify-between text-base text-gray-600">
               <span>{formatTokens(data.tokensUsed)} used</span>
               <span>{formatTokens(data.tokensAllocated)} allocated</span>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-white/10">
+            <div className="h-4 overflow-hidden rounded-full bg-gray-200">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
                 style={{ width: `${usagePercent}%` }}

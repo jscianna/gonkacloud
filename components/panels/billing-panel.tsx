@@ -68,45 +68,45 @@ export function BillingPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
       </div>
     );
   }
 
   if (!data || data.status === "none") {
     return (
-      <Card className="border-emerald-500/30 bg-gradient-to-b from-emerald-500/10 to-transparent">
+      <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50 to-white">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
-            <Zap className="h-8 w-8 text-emerald-400" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+            <Zap className="h-8 w-8 text-emerald-600" />
           </div>
-          <CardTitle className="text-2xl text-white">Get API Access</CardTitle>
-          <CardDescription className="text-white/60">
+          <CardTitle className="text-2xl text-gray-900">Get API Access</CardTitle>
+          <CardDescription className="text-gray-600 text-base">
             Subscribe to unlock the full power of dogecat
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="mx-auto max-w-md space-y-4">
             <div className="text-center">
-              <span className="text-4xl font-bold text-white">$4.99</span>
-              <span className="text-white/50">/month</span>
+              <span className="text-4xl font-bold text-gray-900">$4.99</span>
+              <span className="text-gray-500">/month</span>
             </div>
 
-            <ul className="space-y-3 text-sm text-white/70">
+            <ul className="space-y-3 text-base text-gray-700">
               <li className="flex items-center gap-3">
-                <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                <Check className="h-5 w-5 flex-shrink-0 text-emerald-500" />
                 <span>100 million tokens per month</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                <Check className="h-5 w-5 flex-shrink-0 text-emerald-500" />
                 <span>OpenAI-compatible API</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                <Check className="h-5 w-5 flex-shrink-0 text-emerald-500" />
                 <span>Multiple API keys</span>
               </li>
               <li className="flex items-center gap-3">
-                <Check className="h-5 w-5 flex-shrink-0 text-emerald-400" />
+                <Check className="h-5 w-5 flex-shrink-0 text-emerald-500" />
                 <span>Qwen3-235B model access</span>
               </li>
             </ul>
@@ -114,15 +114,15 @@ export function BillingPanel() {
             <Button
               onClick={handleSubscribe}
               disabled={subscribing}
-              className="w-full bg-emerald-500 text-white hover:bg-emerald-400"
+              className="w-full bg-emerald-500 text-white hover:bg-emerald-600 text-base py-6"
             >
               {subscribing ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : null}
               Subscribe Now
             </Button>
 
-            <p className="text-center text-xs text-white/40">
+            <p className="text-center text-sm text-gray-500">
               Cancel anytime. Unused tokens don&apos;t roll over.
             </p>
           </div>
@@ -141,23 +141,23 @@ export function BillingPanel() {
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Token Balance */}
-        <Card className="border-white/[0.08] bg-white/[0.02]">
+        <Card className="border-gray-200 bg-white">
           <CardHeader>
-            <CardDescription className="text-white/50">Tokens Remaining</CardDescription>
+            <CardDescription className="text-gray-500 text-base">Tokens Remaining</CardDescription>
             <CardTitle className="flex items-center gap-3 text-4xl">
-              <Sparkles className="h-8 w-8 text-emerald-400" />
-              <span className="text-white">{formatTokens(data.tokensRemaining)}</span>
+              <Sparkles className="h-8 w-8 text-emerald-500" />
+              <span className="text-gray-900">{formatTokens(data.tokensRemaining)}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-white/60">
+              <div className="flex justify-between text-base text-gray-600">
                 <span>Used {isFree ? "" : "this period"}</span>
                 <span>
                   {formatTokens(data.tokensUsed)} / {formatTokens(data.tokensAllocated)}
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-3 overflow-hidden rounded-full bg-gray-200">
                 <div
                   className="h-full bg-emerald-500 transition-all"
                   style={{ width: `${usagePercent}%` }}
@@ -168,36 +168,36 @@ export function BillingPanel() {
         </Card>
 
         {/* Subscription Info */}
-        <Card className="border-white/[0.08] bg-white/[0.02]">
+        <Card className="border-gray-200 bg-white">
           <CardHeader>
-            <CardDescription className="text-white/50">Current Plan</CardDescription>
-            <CardTitle className="text-white">{isFree ? "Free Tier" : "API Access"}</CardTitle>
+            <CardDescription className="text-gray-500 text-base">Current Plan</CardDescription>
+            <CardTitle className="text-gray-900 text-2xl">{isFree ? "Free Tier" : "API Access"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-white/60">Status</span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <Check className="h-4 w-4" />
+            <div className="flex items-center justify-between text-base">
+              <span className="text-gray-600">Status</span>
+              <span className="flex items-center gap-1 text-emerald-600">
+                <Check className="h-5 w-5" />
                 {isFree ? "Free" : "Active"}
               </span>
             </div>
             {!isFree && (
-              <div className="flex items-center justify-between">
-                <span className="text-white/60">Renews</span>
-                <span className="text-white">{formatDate(data.currentPeriodEnd)}</span>
+              <div className="flex items-center justify-between text-base">
+                <span className="text-gray-600">Renews</span>
+                <span className="text-gray-900">{formatDate(data.currentPeriodEnd)}</span>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-white/60">{isFree ? "Allocation" : "Price"}</span>
-              <span className="text-white">{isFree ? "1M tokens (one-time)" : "$4.99/month"}</span>
+            <div className="flex items-center justify-between text-base">
+              <span className="text-gray-600">{isFree ? "Allocation" : "Price"}</span>
+              <span className="text-gray-900">{isFree ? "1M tokens (one-time)" : "$4.99/month"}</span>
             </div>
             {isFree && (
               <Button
                 onClick={handleSubscribe}
                 disabled={subscribing}
-                className="w-full bg-emerald-500 text-white hover:bg-emerald-400"
+                className="w-full bg-emerald-500 text-white hover:bg-emerald-600 text-base"
               >
-                {subscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {subscribing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                 Upgrade to 100M/month
               </Button>
             )}
@@ -207,11 +207,11 @@ export function BillingPanel() {
 
       {/* Out of tokens warning */}
       {data.tokensRemaining === 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/10">
+        <Card className="border-amber-200 bg-amber-50">
           <CardContent className="flex items-center justify-between py-4">
             <div>
-              <p className="font-medium text-amber-200">You&apos;ve used all your tokens</p>
-              <p className="text-sm text-amber-200/70">
+              <p className="font-medium text-amber-800 text-base">You&apos;ve used all your tokens</p>
+              <p className="text-base text-amber-700">
                 {isFree
                   ? "Upgrade to get 100M tokens per month"
                   : `Your tokens will reset on ${formatDate(data.currentPeriodEnd)}`}
@@ -222,7 +222,7 @@ export function BillingPanel() {
                 variant="outline"
                 onClick={handleSubscribe}
                 disabled={subscribing}
-                className="border-amber-500/30 text-amber-200 hover:bg-amber-500/20"
+                className="border-amber-300 text-amber-800 hover:bg-amber-100"
               >
                 Upgrade
               </Button>

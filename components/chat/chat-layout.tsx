@@ -115,7 +115,7 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
       </div>
 
       {/* Navigation */}
-      <div className="border-t border-white/[0.06] p-3">
+      <div className="border-t border-gray-200 p-3">
         <div className="space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -124,11 +124,11 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
                 key={item.id}
                 onClick={() => openPanel(item.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  "text-white/60 hover:bg-white/[0.06] hover:text-white"
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
+                  "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
               </button>
             );
@@ -137,13 +137,13 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
             href="/api-docs"
             target="_blank"
             className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              "text-white/60 hover:bg-white/[0.06] hover:text-white"
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-colors",
+              "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             )}
           >
-            <Code2 className="h-4 w-4" />
+            <Code2 className="h-5 w-5" />
             <span>API Docs</span>
-            <ExternalLink className="ml-auto h-3 w-3" />
+            <ExternalLink className="ml-auto h-4 w-4" />
           </Link>
         </div>
       </div>
@@ -151,13 +151,13 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
   );
 
   return (
-    <div className="flex h-screen bg-[#0a0a0b] text-white">
+    <div className="flex h-screen bg-white text-gray-900">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-64 flex-shrink-0 border-r border-white/[0.06] md:flex md:flex-col">
-        <div className="border-b border-white/[0.06] px-4 py-4">
+      <aside className="hidden w-72 flex-shrink-0 border-r border-gray-200 bg-gray-50 md:flex md:flex-col">
+        <div className="border-b border-gray-200 px-4 py-4">
           <Link className="flex items-center gap-2" href="/">
-            <Image alt="dogecat logo" className="rounded" height={24} src="/logo.svg" width={24} />
-            <span className="text-base font-semibold tracking-tight">dogecat</span>
+            <Image alt="dogecat logo" className="rounded" height={28} src="/logo.svg" width={28} />
+            <span className="text-lg font-semibold tracking-tight text-gray-900">dogecat</span>
           </Link>
         </div>
         {sidebarContent}
@@ -166,56 +166,56 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-white/[0.06] px-4">
+        <header className="flex h-16 flex-shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4">
           <div className="flex items-center gap-2">
             {/* Mobile menu */}
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button
-                  className="md:hidden border-white/10 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+                  className="md:hidden border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                   size="sm"
                   variant="outline"
                 >
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-72 border-white/[0.06] bg-[#0a0a0b] p-0"
+                className="w-72 border-gray-200 bg-gray-50 p-0"
               >
-                <div className="border-b border-white/[0.06] px-4 py-4">
+                <div className="border-b border-gray-200 px-4 py-4">
                   <Link className="flex items-center gap-2" href="/">
                     <Image
                       alt="dogecat logo"
                       className="rounded"
-                      height={24}
+                      height={28}
                       src="/logo.svg"
-                      width={24}
+                      width={28}
                     />
-                    <span className="text-base font-semibold tracking-tight">dogecat</span>
+                    <span className="text-lg font-semibold tracking-tight text-gray-900">dogecat</span>
                   </Link>
                 </div>
                 {sidebarContent}
               </SheetContent>
             </Sheet>
 
-            <span className="text-sm text-white/40 md:hidden">dogecat</span>
+            <span className="text-base text-gray-500 md:hidden">dogecat</span>
           </div>
 
           <div className="flex items-center gap-3">
             {hasSubscription ? (
               <button
                 onClick={() => openPanel("usage")}
-                className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-sm font-medium text-white/70 transition-colors hover:bg-white/[0.06] sm:flex"
+                className="hidden items-center gap-2 rounded-full border border-gray-300 bg-white px-4 py-1.5 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 sm:flex"
               >
-                <Sparkles className="h-4 w-4 text-emerald-400" />
+                <Sparkles className="h-5 w-5 text-emerald-500" />
                 <span>{formatTokens(tokensRemaining)} tokens</span>
               </button>
             ) : (
               <Button
                 onClick={() => openPanel("billing")}
-                className="bg-emerald-500 text-white hover:bg-emerald-400"
-                size="sm"
+                className="bg-emerald-500 text-white hover:bg-emerald-600 text-base"
+                size="default"
               >
                 Subscribe
               </Button>
@@ -224,7 +224,7 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
               afterSignOutUrl="/"
               appearance={{
                 elements: {
-                  avatarBox: "h-8 w-8",
+                  avatarBox: "h-9 w-9",
                 },
               }}
             />
@@ -232,7 +232,7 @@ export function ChatLayout({ tokensRemaining, hasSubscription }: ChatLayoutProps
         </header>
 
         {/* Chat Area */}
-        <main className="flex-1 overflow-hidden">
+        <main className="flex-1 overflow-hidden bg-white">
           <PersistentChat
             conversationId={currentConversationId}
             onConversationUpdate={handleConversationUpdate}

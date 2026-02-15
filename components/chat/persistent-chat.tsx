@@ -113,7 +113,7 @@ export function PersistentChat({
     if (!el) return;
 
     el.style.height = "0px";
-    const lineHeight = 24;
+    const lineHeight = 28;
     const maxHeight = lineHeight * 6;
     const next = Math.min(el.scrollHeight, maxHeight);
     el.style.height = `${next}px`;
@@ -233,39 +233,39 @@ export function PersistentChat({
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col bg-white">
       {/* Messages area */}
       <div ref={listRef} className="flex-1 overflow-auto">
-        <div className="mx-auto w-full max-w-2xl px-4 py-4">
+        <div className="mx-auto w-full max-w-3xl px-4 py-6">
           {!hasMessages ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <div className="relative mb-3">
-                <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 blur-2xl" />
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="relative mb-4">
+                <div className="absolute -inset-10 rounded-full bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 blur-2xl" />
                 <Image
                   src="/logo.svg"
                   alt="dogecat"
-                  width={300}
-                  height={300}
+                  width={200}
+                  height={200}
                   className="relative rounded-2xl"
                 />
               </div>
-              <h1 className="mb-2 text-4xl font-semibold text-white">dogecat</h1>
-              <p className="text-xl text-white/40">Private AI chat</p>
-              <p className="mt-2 max-w-lg text-center text-sm text-white/30">
+              <h1 className="mb-2 text-4xl font-semibold text-gray-900">dogecat</h1>
+              <p className="text-xl text-gray-500">Private AI chat</p>
+              <p className="mt-3 max-w-lg text-center text-base text-gray-400">
                 Your conversations are stored locally in your browser.
                 {!conversationId && " Start typing to begin."}
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-8">
               {messages.map((m) => (
                 <MessageBubble key={m.id} role={m.role} content={m.content} />
               ))}
 
               {typing && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl bg-white/[0.03] px-4 py-3 text-sm text-white/60">
-                    <Loader2 className="h-4 w-4 animate-spin text-emerald-400" />
+                  <div className="flex items-center gap-2 rounded-2xl bg-gray-100 px-5 py-3 text-base text-gray-600">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
                     <span>Thinking...</span>
                   </div>
                 </div>
@@ -276,12 +276,12 @@ export function PersistentChat({
       </div>
 
       {/* Input area */}
-      <div className="border-t border-white/[0.06] bg-[#0a0a0b] px-4 py-4">
-        <div className="mx-auto w-full max-w-2xl">
-          <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.03]">
+      <div className="border-t border-gray-200 bg-gray-50 px-4 py-5">
+        <div className="mx-auto w-full max-w-3xl">
+          <div className="relative overflow-hidden rounded-2xl border border-gray-300 bg-white shadow-sm">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none bg-transparent px-4 py-3.5 pr-14 text-sm text-white placeholder:text-white/30 focus:outline-none"
+              className="w-full resize-none bg-transparent px-5 py-4 pr-16 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
               placeholder="Message dogecat..."
               value={input}
               onChange={(e) => {
@@ -300,17 +300,17 @@ export function PersistentChat({
               size="sm"
               disabled={sending || !input.trim()}
               onClick={send}
-              className="absolute bottom-2.5 right-2.5 h-8 w-8 rounded-lg bg-emerald-500 p-0 text-white hover:bg-emerald-400 disabled:opacity-30"
+              className="absolute bottom-3 right-3 h-10 w-10 rounded-xl bg-emerald-500 p-0 text-white hover:bg-emerald-600 disabled:opacity-30"
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </Button>
           </div>
 
-          <div className="mt-2 flex items-center justify-between text-xs text-white/40">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3 text-emerald-400" />
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-emerald-500" />
               <select
-                className="appearance-none bg-transparent text-white/60 focus:outline-none"
+                className="appearance-none bg-transparent text-gray-600 focus:outline-none"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
               >
@@ -320,9 +320,9 @@ export function PersistentChat({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="h-3 w-3 text-white/40" />
+              <ChevronDown className="h-4 w-4 text-gray-400" />
             </div>
-            <span className="text-white/30">Stored locally in your browser</span>
+            <span className="text-gray-400">Stored locally in your browser</span>
           </div>
         </div>
       </div>
@@ -340,8 +340,8 @@ function MessageBubble({ role, content }: { role: "user" | "assistant"; content:
       <div
         className={
           isUser
-            ? "max-w-[85%] rounded-2xl bg-emerald-500/90 px-4 py-3 text-sm text-white sm:max-w-[75%]"
-            : "max-w-[85%] text-sm text-white/90 sm:max-w-[75%]"
+            ? "max-w-[85%] rounded-2xl bg-emerald-500 px-5 py-3 text-base text-white sm:max-w-[75%]"
+            : "max-w-[85%] text-base text-gray-800 sm:max-w-[75%]"
         }
       >
         <Message role={role} content={content} />

@@ -16,18 +16,18 @@ export function PanelWrapper({ open, onClose, title, children }: PanelWrapperPro
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent 
         side="right" 
-        className="w-full border-white/[0.06] bg-[#0a0a0b] p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl"
+        className="w-full border-gray-200 bg-white p-0 sm:max-w-xl md:max-w-2xl lg:max-w-3xl"
       >
-        <SheetHeader className="border-b border-white/[0.06] px-6 py-4">
+        <SheetHeader className="border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-lg font-semibold text-white">{title}</SheetTitle>
+            <SheetTitle className="text-xl font-semibold text-gray-900">{title}</SheetTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-8 w-8 p-0 text-white/60 hover:bg-white/[0.06] hover:text-white"
+              className="h-9 w-9 p-0 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </SheetHeader>
