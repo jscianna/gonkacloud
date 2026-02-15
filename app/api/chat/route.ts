@@ -101,13 +101,13 @@ export async function POST(req: Request) {
       console.log("[chat] User auto-provisioned:", userId);
     }
 
-    // Check user's subscription and token balance
+    // Check user's subscription and token balance (free or active)
     let subscription = null;
     try {
       subscription = await db.query.apiSubscriptions.findFirst({
         where: and(
           eq(apiSubscriptions.userId, dbUser.id),
-          eq(apiSubscriptions.status, "active")
+          sql`${apiSubscriptions.status} IN ('active', 'free')`
         ),
       });
     } catch (e) {
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     }
 
     if (!subscription) {
-      throw new ApiError(402, "No active subscription. Subscribe to get access.", "billing_error", "no_subscription");
+      throw new ApiError(402, "No subscription found. Please sign up to get 1M free tokens!", "billing_error", "no_subscription");
     }
 
     const tokensAllocated = subscription.tokensAllocated ?? 0n;
@@ -123,12 +123,10 @@ export async function POST(req: Request) {
     const tokensRemaining = tokensAllocated - tokensUsed;
 
     if (tokensRemaining <= 0n) {
-      throw new ApiError(
-        402,
-        "You've used all your tokens. Wait for your next billing cycle or upgrade.",
-        "billing_error",
-        "insufficient_tokens"
-      );
+      const message = subscription.status === "free"
+        ? "Free tier limit reached! Subscribe for 100M tokens/month at $4.99."
+        : "You've used all your tokens. Wait for your next billing cycle or upgrade.";
+      throw new ApiError(402, message, "billing_error", "insufficient_tokens");
     }
 
     // Sanitize messages
