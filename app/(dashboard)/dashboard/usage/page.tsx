@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { Activity, Sparkles, TrendingUp } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ export default async function UsagePage() {
       subscription = await db.query.apiSubscriptions.findFirst({
         where: and(
           eq(apiSubscriptions.userId, user.dbUser.id),
-          eq(apiSubscriptions.status, "active")
+          sql`${apiSubscriptions.status} IN ('active', 'free')`
         ),
       });
 
@@ -109,9 +109,13 @@ export default async function UsagePage() {
           {/* Progress Bar */}
           <Card className="border-white/[0.08] bg-white/[0.02]">
             <CardHeader>
-              <CardTitle className="text-white">Current Period</CardTitle>
+              <CardTitle className="text-white">
+                {subscription.status === "free" ? "Free Tier" : "Current Period"}
+              </CardTitle>
               <CardDescription className="text-white/50">
-                Resets on {formatDate(subscription.currentPeriodEnd)}
+                {subscription.status === "free" 
+                  ? "One-time 1M tokens • Upgrade for 100M/month"
+                  : `Resets on ${formatDate(subscription.currentPeriodEnd)}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -147,9 +151,9 @@ export default async function UsagePage() {
         <Card className="border-white/[0.08] bg-white/[0.02]">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Activity className="h-12 w-12 text-white/20" />
-            <p className="mt-4 text-lg font-medium text-white">No active subscription</p>
+            <p className="mt-4 text-lg font-medium text-white">No usage yet</p>
             <p className="mt-1 text-sm text-white/50">
-              Subscribe to start tracking your API usage.
+              Create an API key and start making requests to see your usage.
             </p>
           </CardContent>
         </Card>
