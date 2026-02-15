@@ -201,9 +201,9 @@ export function PublicChatClient() {
               {/* Example prompts */}
               <div className="grid w-full max-w-lg gap-3">
                 {[
-                  "Explain quantum computing in simple terms",
-                  "Write a haiku about programming",
-                  "What's the future of AI?",
+                  "Roast my mass email outreach strategy 🔥",
+                  "Write a Y Combinator application for a cat cafe",
+                  "Explain why mass relay would actually work in physics",
                 ].map((prompt) => (
                   <button
                     key={prompt}
