@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, apiSubscriptions } from "@/lib/db/schema";
+
+// Free tier: 1M tokens one-time
+const FREE_TIER_TOKENS = 1_000_000n;
 
 type ClerkUserCreatedPayload = {
   id: string;
@@ -58,10 +61,13 @@ export async function POST(req: Request) {
     console.log("Creating user:", clerkId, email);
 
     try {
+      const userId = crypto.randomUUID();
+      
+      // Create user
       await db
         .insert(users)
         .values({
-          id: crypto.randomUUID(),
+          id: userId,
           clerkId,
           email,
         })
@@ -70,7 +76,25 @@ export async function POST(req: Request) {
           set: { email },
         });
 
-      console.log("User created");
+      // Get the user ID (in case of conflict/update)
+      const user = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.clerkId, clerkId),
+      });
+
+      if (user) {
+        // Create free tier subscription with 1M tokens
+        await db
+          .insert(apiSubscriptions)
+          .values({
+            userId: user.id,
+            status: "free",
+            tokensAllocated: FREE_TIER_TOKENS,
+            tokensUsed: 0n,
+          })
+          .onConflictDoNothing(); // Don't create duplicate if already exists
+        
+        console.log("User created with free tier:", user.id);
+      }
     } catch (err) {
       console.error("Error creating user:", err instanceof Error ? err.message : String(err));
       return NextResponse.json(

@@ -28,21 +28,24 @@ export default async function DashboardPage() {
   // Get subscription and token balance (fail-safe if table doesn't exist)
   let tokensRemaining = 0n;
   let hasSubscription = false;
+  let subscriptionStatus = "";
+  let tokensAllocated = 0n;
 
   if (user?.dbUser?.id) {
     try {
       const subscription = await db.query.apiSubscriptions.findFirst({
         where: and(
           eq(apiSubscriptions.userId, user.dbUser.id),
-          eq(apiSubscriptions.status, "active")
+          sql`${apiSubscriptions.status} IN ('active', 'free')`
         ),
       });
 
       if (subscription) {
         hasSubscription = true;
-        const allocated = subscription.tokensAllocated ?? 0n;
+        subscriptionStatus = subscription.status ?? "";
+        tokensAllocated = subscription.tokensAllocated ?? 0n;
         const used = subscription.tokensUsed ?? 0n;
-        tokensRemaining = allocated - used;
+        tokensRemaining = tokensAllocated - used;
         if (tokensRemaining < 0n) tokensRemaining = 0n;
       }
     } catch (e) {
@@ -81,7 +84,9 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-white/[0.08] bg-white/[0.02]">
           <CardHeader>
-            <CardDescription className="text-white/50">Tokens Remaining</CardDescription>
+            <CardDescription className="text-white/50">
+              {subscriptionStatus === "free" ? "Free Tier" : "Tokens Remaining"}
+            </CardDescription>
             <CardTitle className={`text-3xl ${tokenColor}`}>
               {hasSubscription ? formatTokens(tokensRemaining) : "—"}
             </CardTitle>
@@ -90,8 +95,18 @@ export default async function DashboardPage() {
                 <Link href="/dashboard/billing" className="hover:underline">Subscribe to get started</Link>
               </CardDescription>
             )}
-            {hasSubscription && tokensRemaining <= 0n && (
-              <CardDescription className="text-amber-400/70">Out of tokens</CardDescription>
+            {hasSubscription && subscriptionStatus === "free" && tokensRemaining > 0n && (
+              <CardDescription className="text-white/50">
+                of {formatTokens(tokensAllocated)} free tokens • <Link href="/dashboard/billing" className="text-emerald-400 hover:underline">Upgrade for 100M/mo</Link>
+              </CardDescription>
+            )}
+            {hasSubscription && subscriptionStatus === "free" && tokensRemaining <= 0n && (
+              <CardDescription className="text-amber-400/70">
+                Free tier exhausted • <Link href="/dashboard/billing" className="text-emerald-400 hover:underline">Subscribe for $4.99/mo</Link>
+              </CardDescription>
+            )}
+            {hasSubscription && subscriptionStatus === "active" && tokensRemaining <= 0n && (
+              <CardDescription className="text-amber-400/70">Out of tokens - resets next billing cycle</CardDescription>
             )}
           </CardHeader>
         </Card>

@@ -163,10 +163,10 @@ export function PublicChatClient() {
             API
           </Link>
           <Link 
-            href="/sign-in" 
+            href="/sign-up" 
             className="rounded-full bg-emerald-500 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-emerald-400"
           >
-            Sign In
+            Get 1M Free Tokens
           </Link>
         </div>
       </header>
@@ -273,7 +273,7 @@ export function PublicChatClient() {
               {tokenCount > 0 && (
                 <span>{tokenCount.toLocaleString()} tokens</span>
               )}
-              <span>Free preview • <Link href="/api-docs" className="text-white/50 hover:text-white/70">Get API access →</Link></span>
+              <span>Sign up for 1M free tokens • <Link href="/sign-up" className="text-emerald-400/70 hover:text-emerald-400">Get started →</Link></span>
             </div>
             <div className="flex items-center justify-center gap-4 text-xs text-white/20">
               <Link href="/legal/terms" className="hover:text-white/40 transition">Terms</Link>

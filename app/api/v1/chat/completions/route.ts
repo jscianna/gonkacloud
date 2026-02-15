@@ -57,25 +57,28 @@ export async function POST(req: Request) {
 
     const user = keyRecord.user;
 
-    // 3. Check subscription
+    // 3. Check subscription (free tier or active paid)
     const subscription = await db.query.apiSubscriptions.findFirst({
       where: and(
         eq(apiSubscriptions.userId, user.id),
-        eq(apiSubscriptions.status, "active")
+        sql`${apiSubscriptions.status} IN ('active', 'free')`
       ),
     });
 
     if (!subscription) {
       return NextResponse.json(
-        { error: { message: "No active subscription", type: "billing_error", code: "no_subscription" } },
+        { error: { message: "No active subscription. Sign up to get 1M free tokens!", type: "billing_error", code: "no_subscription" } },
         { status: 402 }
       );
     }
 
     const tokensRemaining = (subscription.tokensAllocated ?? 0n) - (subscription.tokensUsed ?? 0n);
     if (tokensRemaining <= 0n) {
+      const message = subscription.status === "free" 
+        ? "Free tier limit reached. Subscribe for 100M tokens/month at $4.99!"
+        : "Token limit reached. Wait for renewal or upgrade.";
       return NextResponse.json(
-        { error: { message: "Token limit reached. Wait for renewal or upgrade.", type: "billing_error", code: "insufficient_tokens" } },
+        { error: { message, type: "billing_error", code: "insufficient_tokens" } },
         { status: 402 }
       );
     }

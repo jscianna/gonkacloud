@@ -38,28 +38,32 @@ export async function provisionSubscriber(
       return { success: false, error: "User not found" };
     }
 
-    // Check for existing subscription
+    // Check for existing subscription (free tier or same stripe subscription)
     const existingSub = await db
       .select()
       .from(apiSubscriptions)
-      .where(eq(apiSubscriptions.stripeSubscriptionId, stripeSubscriptionId))
+      .where(eq(apiSubscriptions.userId, userId))
       .limit(1);
 
     if (existingSub.length > 0) {
-      // Update existing subscription
+      // Upgrade existing subscription (from free tier or update existing paid)
       await db
         .update(apiSubscriptions)
         .set({
+          stripeSubscriptionId,
+          stripePriceId,
           status: "active",
           tokensAllocated: TOKENS_PER_SUBSCRIPTION,
-          tokensUsed: 0n, // Reset on new period
+          tokensUsed: 0n, // Reset on new subscription
           currentPeriodStart: periodStart,
           currentPeriodEnd: periodEnd,
           updatedAt: new Date(),
         })
-        .where(eq(apiSubscriptions.stripeSubscriptionId, stripeSubscriptionId));
+        .where(eq(apiSubscriptions.id, existingSub[0].id));
+      
+      console.log(`[provision] Upgraded subscription for user ${userId} (was: ${existingSub[0].status})`);
     } else {
-      // Create new subscription
+      // Create new subscription (shouldn't happen if Clerk webhook worked, but just in case)
       await db.insert(apiSubscriptions).values({
         userId,
         stripeSubscriptionId,
